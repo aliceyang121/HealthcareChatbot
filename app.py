@@ -1,27 +1,35 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox, QInputDialog,
+        QLabel, QPlainTextEdit, QRadioButton, QVBoxLayout, QWidget)
 
-# Subclass QMainWindow to customise the application's main window
-class MainWindow(QMainWindow):
+class Window(QWidget):
+    def __init__(self, parent=None):
+        super(Window, self).__init__(parent)
 
-    def __init__(self, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
+        grid = QGridLayout()
+        grid.addWidget(self.createExampleGroup(), 0, 0)
+        self.setLayout(grid)
 
-        self.setWindowTitle("Healthcare Chatbot")
+        self.setWindowTitle("PyQt5 Group Box")
+        self.resize(400, 300)
 
-        label = QLabel("hello world!")
+    def createExampleGroup(self):
+        groupBox = QGroupBox("Best Food")
+        txt = QPlainTextEdit("Coucou toi")
+        text = QInputDialog()
+        t = QLabel('Hello there')
+        vbox = QVBoxLayout()
+        vbox.addWidget(t)
+        vbox.addWidget(txt)
+        vbox.addWidget(text)
+        vbox.addStretch(1)
+        groupBox.setLayout(vbox)
 
-        label.setAlignment(Qt.AlignCenter)
+        return groupBox
 
-        # Set the central widget of the Window. Widget will expand
-        # to take up all the space in the window by default.
-        self.setCentralWidget(label)
-
-
-app = QApplication(sys.argv)
-
-window = MainWindow()
-window.show()
-
-app.exec_()
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    clock = Window()
+    clock.show()
+    sys.exit(app.exec_())
