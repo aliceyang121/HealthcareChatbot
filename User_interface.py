@@ -1,6 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QLabel,  QFrame,
-                             QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog)
+                             QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea, QFormLayout)
+from PyQt5 import QtGui
 from PyQt5.QtGui import QIcon
 
 
@@ -25,7 +26,7 @@ def chatbot_input(text):
 
 
 def message_history():
-    group_box = QGroupBox("Message history")
+    group_box = QGroupBox("Messages")
     vertical_box = QVBoxLayout()
     # Add some predefined messages
     for i in range(3):
@@ -33,6 +34,7 @@ def message_history():
         vertical_box.addWidget(chatbot_input("i ' m felix , and i ' ve a brother . do you have any siblings ?"))
         vertical_box.addWidget(user_input("Yes I have 1 sister and 1 brother. How old is your brother?"))
         vertical_box.addWidget(chatbot_input("he ' s 10 years old . what do you like to do for fun ? i study psychology ."))
+
     # Add the messages to the groupbox
     group_box.setLayout(vertical_box)
     # Return the groupbox and the verticalbox in order to update it
@@ -96,8 +98,16 @@ class Window(QWidget):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
 
-        # Initialise the grid
-        grid = QGridLayout()
+        # Adding scrollbar
+        self.layout = QHBoxLayout(self)
+        self.scrollArea = QScrollArea(self)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollAreaWidgetContents = QWidget()
+        # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
+        grid = QGridLayout(self.scrollAreaWidgetContents)
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.layout.addWidget(self.scrollArea)
+
         # Add the message history
         messages_history, vertical_box = message_history()
         grid.addWidget(messages_history)
@@ -109,13 +119,12 @@ class Window(QWidget):
         grid.addWidget(messages(vertical_box))
         self.setLayout(grid)
 
-        self.setWindowTitle("Chatbot")
+        self.setWindowTitle("Healthcare Chatbot")
         self.resize(720, 720)
 
 
 # TODO: add persona
 # TODO: add video/images
-# TODO: add scrollbar
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     clock = Window()
