@@ -20,7 +20,7 @@ class SentimentClassifier(nn.Module):
     output = self.drop(pooled_output)
     return self.out(output)
 
-def emotion_recognition(review_text):
+def detect_emotion(review_text):
     # set device to cpu
     device = torch.device("cpu")
 

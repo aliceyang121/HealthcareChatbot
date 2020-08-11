@@ -11,7 +11,7 @@ def user_input(text, emotion):
     # Define the message
     user_input = QLabel("User: " + text + "\n\tSentiment: " + emotion)
     # Set the color for the message
-    user_input.setStyleSheet("QLabel { background-color : #A9A9A9}")
+    user_input.setStyleSheet("QLabel { background-color : lightblue}")
     # Return the QLabel
     return user_input
 
