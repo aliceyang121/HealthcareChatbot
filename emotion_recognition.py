@@ -34,9 +34,10 @@ def emotion_recognition(review_text):
     print(5)
     bert_model = BertModel.from_pretrained(PRE_TRAINED_MODEL_NAME)
     print(6)
-    model.load_state_dict(torch.load('model.bin', map_location=device))
+    model.load_state_dict(torch.load('final_model.bin', map_location=device))
     print(7)
     model = model.to(device)
+    MAX_LEN = 100
 
     # BERT emotion analysis
     encoded_review = tokenizer.encode_plus(
@@ -53,8 +54,10 @@ def emotion_recognition(review_text):
     input_ids = encoded_review['input_ids'].to(device)
     attention_mask = encoded_review['attention_mask'].to(device)
 
-    output = model(input_ids, attentionmask)
-    prediction = torch.max(output, dim=1)
+    output = model(input_ids, attention_mask)
+    _, prediction = torch.max(output, dim=1)
+
+    class_names = ["anger", "fear", "joy", "sadness"]
 
     print(f'Review text: {review_text}')
     print(f'Sentiment  : {class_names[prediction]}')
