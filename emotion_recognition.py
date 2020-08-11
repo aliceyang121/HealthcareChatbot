@@ -5,7 +5,6 @@ from torch import nn, optim
 import torch.nn.functional as F
 
 class SentimentClassifier(nn.Module):
-
   def __init__(self, n_classes):
     super(SentimentClassifier, self).__init__()
     PRE_TRAINED_MODEL_NAME = 'bert-base-uncased'
@@ -22,24 +21,27 @@ class SentimentClassifier(nn.Module):
     return self.out(output)
 
 def emotion_recognition(review_text):
-    print(1)
+    # set device to cpu
     device = torch.device("cpu")
-    print(2)
+
+    # load pretrained model
     PRE_TRAINED_MODEL_NAME = 'bert-base-uncased'
-    print(3)
+
     # load pretrained bert tokenizer
     tokenizer = BertTokenizer.from_pretrained(PRE_TRAINED_MODEL_NAME)
-    print(4)
-    model = SentimentClassifier(4)
-    print(5)
-    bert_model = BertModel.from_pretrained(PRE_TRAINED_MODEL_NAME)
-    print(6)
-    model.load_state_dict(torch.load('final_model.bin', map_location=device))
-    print(7)
-    model = model.to(device)
-    MAX_LEN = 100
 
-    # BERT emotion analysis
+    # create classifier
+    model = SentimentClassifier(4)
+    bert_model = BertModel.from_pretrained(PRE_TRAINED_MODEL_NAME)
+
+    # load trained weights
+    model.load_state_dict(torch.load('final_model.bin', map_location=device))
+    model = model.to(device)
+
+    MAX_LEN = 100 # token length
+    class_names = ["anger", "fear", "joy", "sadness"] # emotions
+
+    # encode sentence
     encoded_review = tokenizer.encode_plus(
       review_text,
       max_length=MAX_LEN,
@@ -50,19 +52,16 @@ def emotion_recognition(review_text):
       return_tensors='pt',
       truncation=True
     )
-
     input_ids = encoded_review['input_ids'].to(device)
     attention_mask = encoded_review['attention_mask'].to(device)
 
+    # prediction
     output = model(input_ids, attention_mask)
     _, prediction = torch.max(output, dim=1)
 
-    class_names = ["anger", "fear", "joy", "sadness"]
-
-    print(f'Review text: {review_text}')
-    print(f'Sentiment  : {class_names[prediction]}')
+    return class_names[prediction]
 
 
 if __name__ == '__main__':
     review_text = input("Enter sentence: ")
-    emotion_recognition(review_text)
+    print(f'Sentiment: {emotion_recognition(review_text)}')
