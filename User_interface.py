@@ -1,6 +1,7 @@
 import sys
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QLabel,  QFrame,
-                             QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea, QFormLayout)
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QLabel, QFrame, QMenuBar, QStatusBar,
+                             QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea, QFormLayout,
+                             QMainWindow, QAction, QMessageBox)
 from PyQt5.QtGui import QPixmap, QIcon
 
 
@@ -99,15 +100,56 @@ def new_message_on_bottom():
     return frame
 
 
-class Window(QWidget):
-    def __init__(self, parent=None):
-        super(Window, self).__init__(parent)
+def change_persona():
+    print('Hello there')
 
-        # Adding scrollbar
-        self.layout = QHBoxLayout(self)
-        self.scrollArea = QScrollArea(self)
-        self.scrollArea.setWidgetResizable(True)
+
+class UserInterface(QMainWindow):
+    def __init__(self):
+        QMainWindow.__init__(self)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
         self.scrollAreaWidgetContents = QWidget()
+        self.scrollArea = QScrollArea(self)
+        self.layout = QHBoxLayout(self)
+        self.title = "Healthcare Chatbot"
+        self.setWindowTitle("Healthcare Chatbot")
+        self.resize(720, 720)
+        self.add_scrollbar_widgets()
+        self.set_menu()
+
+    def reset_chatbot(self):
+        alert = QMessageBox.about(self, "Warning", "Are you sure you want to reset the "
+                                                   "chatbot?\n All data will be loss")
+
+        #alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        # alert.buttonClicked.connect(msgButtonClick)
+        # returnValue = alert.exec()
+        # if returnValue == QMessageBox.Ok:
+        #     print('OK clicked')
+
+        # TODO: Reset the persona
+        # TODO: Clear history
+        # TODO: Print the Qmessage with the ok and cancel buttons
+        # blender_agent = create_agent_from_model_file("zoo:blender/blender_90M/model")
+
+    def set_menu(self):
+        persona = QAction("Change persona", self)
+        persona.triggered.connect(lambda: change_persona())
+
+        reset = QAction("Reset Chatbot", self)
+
+        # reset.triggered.connect(lambda: QMessageBox.about(self, "Warning", "Are you sure you want to reset the "
+        #                                                                    "chatbot?\n All data will be loss"))
+        reset.triggered.connect(lambda: self.reset_chatbot())
+        menu = self.menuBar()
+        menu.addAction(persona)
+        menu.addAction(reset)
+
+    def add_scrollbar_widgets(self):
+        # Adding scrollbar
+        self.scrollArea.setWidgetResizable(True)
         # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
         grid = QGridLayout(self.scrollAreaWidgetContents)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
@@ -121,15 +163,12 @@ class Window(QWidget):
 
         # Add the input line for new messages
         grid.addWidget(messages(vertical_box))
-        self.setLayout(grid)
-
-        self.setWindowTitle("Healthcare Chatbot")
-        self.resize(720, 720)
+        self.central_widget.setLayout(grid)
 
 
 # TODO: add persona
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    clock = Window()
-    clock.show()
+    user_interface = UserInterface()
+    user_interface.show()
     sys.exit(app.exec_())
