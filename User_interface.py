@@ -6,10 +6,9 @@ from PyQt5.QtGui import QIcon, QPixmap
 from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
 
-def show_emotion(text, box):
+def show_emotion(text, label):
     emotion = detect_emotion(text)
-    emotion_display = QLabel(emotion)
-    box.addWidget(emotion_display)
+    label.setText(emotion)
 
 # Function that return a QLabel with the user message color AND tracks user emotion
 def user_input(text):
@@ -108,7 +107,9 @@ def messages(messages_box, blender_bot):
     horizontal_box_2 = QHBoxLayout()
     emotion_button = QPushButton()
     emotion_button.setIcon(QIcon("Images/emoji.png"))
-    emotion_button.clicked.connect(lambda: show_emotion(new_message_input.text(), horizontal_box_2))
+    emotion_display = QLabel()
+    horizontal_box_2.addWidget(emotion_display)
+    emotion_button.clicked.connect(lambda: show_emotion(new_message_input.text(), emotion_display))
     horizontal_box.addWidget(emotion_button)
 
     # Add a button in order to input photos and videos
@@ -187,10 +188,11 @@ class UserInterface(QMainWindow):
         # Separation between the new messages input and the history
         grid.addWidget(new_message_on_bottom())
 
-        # Add the input line for new messages
         messages_box, emotion_box = messages(vertical_box, self.blender_bot)
-        grid.addWidget(messages_box)
 
+        # Add the input line for new messages
+        grid.addWidget(messages_box)
+        # Add the sentiment display
         grid.addWidget(emotion_box)
 
         self.central_widget.setLayout(grid)

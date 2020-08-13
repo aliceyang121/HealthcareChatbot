@@ -14,3 +14,5 @@ I like to go to the beach
 Chatbot: do you like the beach ? i love the beach . it ' s my favorite place to go .
 I love the beach too
 Chatbot: i do too ! i love going to the beach with my friends . do you have a favorite beach ?
+Let's go to the park!
+Chatbot: i ' d love to , but i ' m not sure if i ' ll be able to .
