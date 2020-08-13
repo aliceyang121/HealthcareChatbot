@@ -1,11 +1,9 @@
-import transformers
 try:
     from transformers import BertModel, BertTokenizer, AdamW, get_linear_schedule_with_warmup
 except ImportError:
     from transformers.modeling_bert import BertModel
 import torch
 from torch import nn, optim
-import torch.nn.functional as F
 
 
 class SentimentClassifier(nn.Module):

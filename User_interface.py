@@ -28,18 +28,25 @@ def chatbot_input(text):
 
 def message_history():
     widget = QGroupBox("Message")
+    # Add the scrollbar
     scroll = QScrollArea()
     scroll.setWidget(widget)
     scroll.setMinimumHeight(600)
     scroll.setWidgetResizable(True)
     vertical_box = QVBoxLayout()
 
-    # Add some predefined messages
-    # for i in range(12):
-    #     vertical_box.addWidget(user_input("Hello there, what's your name?", "joy"))
-    #     vertical_box.addWidget(chatbot_input("i ' m felix , and i ' ve a brother . do you have any siblings ?"))
-    #     vertical_box.addWidget(user_input("Yes I have 1 sister and 1 brother. How old is your brother?", "joy"))
-    #     vertical_box.addWidget(chatbot_input("he's 10 years old. what do you like to do for fun? i study psychology ."))
+    # To know if the chatbot said the sentence or the user
+    count = 0
+    history = open("data/history.txt")
+    for line in history:
+        if count % 2 == 0:
+            list_word = line.split(" ")
+            # The emotion is the last word of the line
+            vertical_box.addWidget(user_input("".join(list_word[:-1]), list_word[-1]))
+        else:
+            vertical_box.addWidget(chatbot_input(line))
+        count = count + 1
+    history.close()
 
     # Add the messages to the box
     widget.setLayout(vertical_box)
@@ -63,9 +70,15 @@ def add_new_message(message, box, blender_bot):
     if len(message.text()) > 0:
         emotion = detect_emotion(message.text())
         box.addWidget(user_input(message.text(), emotion))
-        box.addWidget(chatbot_input(next_answer(blender_bot, message.text())))
-        # analyse_store_answer(message.text(), '')
+        bot_input = chatbot_input(next_answer(blender_bot, message.text()))
+        box.addWidget(bot_input)
+        # Add the new elements to the history file.
+        # TODO: Improve this function so we're not opening the file every time
+        history = open("data/history.txt", "a")
+        history.write(message.text() + " " + emotion + "\n" + bot_input.text() + "\n")
+        analyse_store_answer(message.text(), '')
         message.setText("")
+
 
 
 def messages(messages_box, blender_bot):
@@ -118,9 +131,7 @@ class UserInterface(QMainWindow):
         QMainWindow.__init__(self)
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-
         self.blender_bot = create_agent_and_persona('Your persona: My name is Jean-Eudes')
-
         self.layout = QHBoxLayout(self)
         self.title = "Healthcare Chatbot"
         self.setWindowTitle("Healthcare Chatbot")
@@ -137,11 +148,11 @@ class UserInterface(QMainWindow):
         # returnValue = alert.exec()
         # if returnValue == QMessageBox.Ok:
         #     print('OK clicked')
-
-        # TODO: Reset the persona
         # TODO: Clear history
         # TODO: Print the Qmessage with the ok and cancel buttons
-        # blender_agent = create_agent_from_model_file("zoo:blender/blender_90M/model")
+        self.blender_bot.reset()
+
+
 
     def set_menu(self):
         persona = QAction("Change persona", self)

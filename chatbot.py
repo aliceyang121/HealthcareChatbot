@@ -3,7 +3,6 @@ from parlai.core.agents import create_agent_from_model_file
 
 # Add the user input and the question if necessary
 def analyse_store_answer(user_input, bot_input):
-    user_input = user_input.text()
     if user_input[0] == 'I' and len(user_input) > 5:
         if user_input[1:4] == "'m " or user_input[1] == ' ':
             if user_input[1:4] == "'m ":
