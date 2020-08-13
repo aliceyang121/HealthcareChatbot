@@ -37,7 +37,7 @@ def message_history():
     scroll.setWidget(widget)
     scroll.setMinimumHeight(600)
     scroll.setWidgetResizable(True)
-    vertical_box = QVBoxLayout()
+    message_history_box = QVBoxLayout()
 
     # To know if the chatbot said the sentence or the user
     count = 0
@@ -46,16 +46,16 @@ def message_history():
         if count % 2 == 0:
             list_word = line.split(" ")
             # The emotion is the last word of the line
-            vertical_box.addWidget(user_input(" ".join(list_word[:-1])))
+            message_history_box.addWidget(user_input(" ".join(list_word[:])))
         else:
-            vertical_box.addWidget(chatbot_input(line))
+            message_history_box.addWidget(chatbot_input(line))
         count = count + 1
     history.close()
 
     # Add the messages to the box
-    widget.setLayout(vertical_box)
+    widget.setLayout(message_history_box)
     # Return the scrollbar and the verticalbox in order to update it
-    return scroll, vertical_box
+    return scroll, message_history_box
 
 
 # Open the window in order to select the files
@@ -83,13 +83,13 @@ def add_new_message(message, box, blender_bot):
         analyse_store_answer(message.text(), '')
         message.setText("")
 
-def messages(messages_box, blender_bot):
+def messages(message_history_box, blender_bot):
     group_box = QGroupBox("New message")
-    horizontal_box = QHBoxLayout()
+    new_messages_box = QHBoxLayout()
     # Add the input line to the horizontal box
     new_message_input = QLineEdit()
     # If we press the ENTER key, we send the message
-    new_message_input.returnPressed.connect(lambda: add_new_message(new_message_input, messages_box, blender_bot))
+    new_message_input.returnPressed.connect(lambda: add_new_message(new_message_input, message_history_box, blender_bot))
 
     # Create the send button
     # TODO: If there's no text, display the photo button, otherwise the send button (not both)
@@ -97,31 +97,31 @@ def messages(messages_box, blender_bot):
     # Change the icon
     send_button.setIcon(QIcon("Images/send.jpg"))
     # Send the message if the user press the send button
-    send_button.clicked[bool].connect(lambda: add_new_message(new_message_input, messages_box, blender_bot))
+    send_button.clicked[bool].connect(lambda: add_new_message(new_message_input, message_history_box, blender_bot))
     # Add the input line and the button
-    horizontal_box.addWidget(new_message_input)
-    horizontal_box.addWidget(send_button)
+    new_messages_box.addWidget(new_message_input)
+    new_messages_box.addWidget(send_button)
 
     # Create show emotion button
-    group_box_2 = QGroupBox("Sentiment")
-    horizontal_box_2 = QHBoxLayout()
+    sentiment_group_box = QGroupBox("Sentiment")
+    sentiment_box = QHBoxLayout()
     emotion_button = QPushButton()
     emotion_button.setIcon(QIcon("Images/emoji.png"))
     emotion_display = QLabel()
-    horizontal_box_2.addWidget(emotion_display)
+    sentiment_box.addWidget(emotion_display)
     emotion_button.clicked.connect(lambda: show_emotion(new_message_input.text(), emotion_display))
-    horizontal_box.addWidget(emotion_button)
+    new_messages_box.addWidget(emotion_button)
 
     # Add a button in order to input photos and videos
     import_file = QPushButton()
     import_file.setIcon(QIcon("Images/photo.png"))
-    import_file.clicked.connect(lambda: getfile(import_file, messages_box))
-    horizontal_box.addWidget(import_file)
+    import_file.clicked.connect(lambda: getfile(import_file, message_history_box))
+    new_messages_box.addWidget(import_file)
 
 
-    group_box.setLayout(horizontal_box)
-    group_box_2.setLayout(horizontal_box_2)
-    return group_box, group_box_2
+    group_box.setLayout(new_messages_box)
+    sentiment_group_box.setLayout(sentiment_box)
+    return group_box, sentiment_group_box
 
 
 # Add a separation between the new message and the history
@@ -183,15 +183,16 @@ class UserInterface(QMainWindow):
         # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
         grid = QGridLayout(self)
         # Add the message history
-        messages_history, vertical_box = message_history()
-        grid.addWidget(messages_history)
-        # Separation between the new messages input and the history
-        grid.addWidget(new_message_on_bottom())
+        scroll_area, message_history_box = message_history()
+        grid.addWidget(scroll_area)
 
-        messages_box, emotion_box = messages(vertical_box, self.blender_bot)
+        # Separation between the new messages input and the history
+        # grid.addWidget(new_message_on_bottom())
+
+        new_messages_box, emotion_box = messages(message_history_box, self.blender_bot)
 
         # Add the input line for new messages
-        grid.addWidget(messages_box)
+        grid.addWidget(new_messages_box)
         # Add the sentiment display
         grid.addWidget(emotion_box)
 
