@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QL
                              QMainWindow, QMessageBox, QAction)
 from PyQt5.QtGui import QIcon, QPixmap
 from emotion_recognition import detect_emotion
-
+from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
 
 # Function that return a QLabel with the user message color AND tracks user emotion
 def user_input(text, emotion):
@@ -35,11 +35,11 @@ def message_history():
     vertical_box = QVBoxLayout()
 
     # Add some predefined messages
-    for i in range(12):
-        vertical_box.addWidget(user_input("Hello there, what's your name?", "joy"))
-        vertical_box.addWidget(chatbot_input("i ' m felix , and i ' ve a brother . do you have any siblings ?"))
-        vertical_box.addWidget(user_input("Yes I have 1 sister and 1 brother. How old is your brother?", "joy"))
-        vertical_box.addWidget(chatbot_input("he's 10 years old. what do you like to do for fun? i study psychology ."))
+    # for i in range(12):
+    #     vertical_box.addWidget(user_input("Hello there, what's your name?", "joy"))
+    #     vertical_box.addWidget(chatbot_input("i ' m felix , and i ' ve a brother . do you have any siblings ?"))
+    #     vertical_box.addWidget(user_input("Yes I have 1 sister and 1 brother. How old is your brother?", "joy"))
+    #     vertical_box.addWidget(chatbot_input("he's 10 years old. what do you like to do for fun? i study psychology ."))
 
     # Add the messages to the box
     widget.setLayout(vertical_box)
@@ -50,7 +50,6 @@ def message_history():
 # Open the window in order to select the files
 def getfile(self, box):
     (image, _) = QFileDialog.getOpenFileName(self, 'Open file', 'c:\\', "Image/Videos (*.png *.jpg *.gif *.mp4 *.wav)")
-    print(image)
     pixmap = QPixmap(image)
     pixmap = pixmap.scaledToWidth(600)
     image_input = QLabel(self)
@@ -59,21 +58,23 @@ def getfile(self, box):
 
 
 # When the user send a message
-def add_new_message(message, box):
+def add_new_message(message, box, blender_bot):
     # Add the message to the box only if there's a message
     if len(message.text()) > 0:
         emotion = detect_emotion(message.text())
         box.addWidget(user_input(message.text(), emotion))
+        box.addWidget(chatbot_input(next_answer(blender_bot, message.text())))
+        # analyse_store_answer(message.text(), '')
         message.setText("")
 
 
-def messages(messages_box):
+def messages(messages_box, blender_bot):
     group_box = QGroupBox("New message")
     horizontal_box = QHBoxLayout()
     # Add the input line to the horizontal box
     new_message_input = QLineEdit()
     # If we press the ENTER key, we send the message
-    new_message_input.returnPressed.connect(lambda: add_new_message(new_message_input, messages_box))
+    new_message_input.returnPressed.connect(lambda: add_new_message(new_message_input, messages_box, blender_bot))
 
     # Create the send button
     # TODO: If there's no text, display the photo button, otherwise the send button (not both)
@@ -81,7 +82,7 @@ def messages(messages_box):
     # Change the icon
     send_button.setIcon(QIcon("Images/send.jpg"))
     # Send the message if the user press the send button
-    send_button.clicked[bool].connect(lambda: add_new_message(new_message_input, messages_box))
+    send_button.clicked[bool].connect(lambda: add_new_message(new_message_input, messages_box, blender_bot))
     # Add the input line and the button
     horizontal_box.addWidget(new_message_input)
     horizontal_box.addWidget(send_button)
@@ -117,6 +118,8 @@ class UserInterface(QMainWindow):
         QMainWindow.__init__(self)
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
+
+        self.blender_bot = create_agent_and_persona('Your persona: My name is Jean-Eudes')
 
         self.layout = QHBoxLayout(self)
         self.title = "Healthcare Chatbot"
@@ -161,7 +164,7 @@ class UserInterface(QMainWindow):
         grid.addWidget(new_message_on_bottom())
 
         # Add the input line for new messages
-        grid.addWidget(messages(vertical_box))
+        grid.addWidget(messages(vertical_box, self.blender_bot))
         self.central_widget.setLayout(grid)
 
 

@@ -3,6 +3,7 @@ from parlai.core.agents import create_agent_from_model_file
 
 # Add the user input and the question if necessary
 def analyse_store_answer(user_input, bot_input):
+    user_input = user_input.text()
     if user_input[0] == 'I' and len(user_input) > 5:
         if user_input[1:4] == "'m " or user_input[1] == ' ':
             if user_input[1:4] == "'m ":
@@ -27,12 +28,12 @@ def print_convs(convs):
 
 # Answer to the user
 def next_answer(blender_agent, user_input, boolean_finish=False):
-    all_convs.append(f"You: {user_input}")
+    # all_convs.append("You: {user_input}")
     blender_agent.observe({'text': user_input, "episode_done": boolean_finish})
     response = blender_agent.act()
-    all_convs.append("BlenderBot: {}".format(response['text']))
-    print("BlenderBot: {}".format(response['text']))
-    return response
+    # all_convs.append("BlenderBot: {}".format(response['text']))
+    # print("BlenderBot: {}".format(response['text']))
+    return response['text']
 
 
 # Ask the user for an input and check if the input is valid
@@ -43,7 +44,7 @@ def ask_user_input():
     return user_input
 
 
-def create_agent_and_persona(persona):
+def create_agent_and_persona(persona=''):
     blender_agent = create_agent_from_model_file("zoo:blender/blender_90M/model")
     blender_agent.observe({'text': persona})
     return blender_agent
@@ -51,8 +52,8 @@ def create_agent_and_persona(persona):
 
 if __name__ == '__main__':
     all_convs = []
+    blender_agent = create_agent_and_persona('Your persona: My name is Jean-Eudes')
     user_input = ask_user_input()
-    blender_agent = create_agent_and_persona()
     while user_input != '[EXIT]':
         bot_input = next_answer(blender_agent, user_input)
         user_input = ask_user_input()
