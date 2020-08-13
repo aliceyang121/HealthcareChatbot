@@ -1,2 +1,16 @@
-hello there joy
+hello there
 Chatbot: hello , how are you ? i ' m jean , and i ' ve been called jean for a long time .
+I'm good. What is your hobby
+Chatbot: i like to read and play video games . what do you like to do in your spare time ?
+I like to go on runs. What is your favorite food?
+Chatbot: i like italian food the most . what ' s your favorite type of food ? i like mexican food the best .
+I love pizza.
+Chatbot: i do too , but i ' m not a big fan of pizza . i prefer pizza hut .
+What toppings do you like on pizza?
+Chatbot: i like a lot of vegetables and meats . what about you ? do you have any hobbies ?
+I like running.
+Chatbot: i like to run , but i ' m not very good at it . what do you do for fun ?
+I like to go to the beach
+Chatbot: do you like the beach ? i love the beach . it ' s my favorite place to go .
+I love the beach too
+Chatbot: i do too ! i love going to the beach with my friends . do you have a favorite beach ?

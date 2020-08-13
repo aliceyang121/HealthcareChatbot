@@ -6,10 +6,15 @@ from PyQt5.QtGui import QIcon, QPixmap
 from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
 
+def show_emotion(text, box):
+    emotion = detect_emotion(text)
+    emotion_display = QLabel(emotion)
+    box.addWidget(emotion_display)
+
 # Function that return a QLabel with the user message color AND tracks user emotion
-def user_input(text, emotion):
+def user_input(text):
     # Define the message
-    user_input = QLabel("User: " + text + "\n\tSentiment: " + emotion)
+    user_input = QLabel("User: " + text)
     # Set the color for the message
     user_input.setStyleSheet("QLabel { background-color : lightblue}")
     # Return the QLabel
@@ -42,7 +47,7 @@ def message_history():
         if count % 2 == 0:
             list_word = line.split(" ")
             # The emotion is the last word of the line
-            vertical_box.addWidget(user_input("".join(list_word[:-1]), list_word[-1]))
+            vertical_box.addWidget(user_input(" ".join(list_word[:-1])))
         else:
             vertical_box.addWidget(chatbot_input(line))
         count = count + 1
@@ -68,18 +73,16 @@ def getfile(self, box):
 def add_new_message(message, box, blender_bot):
     # Add the message to the box only if there's a message
     if len(message.text()) > 0:
-        emotion = detect_emotion(message.text())
-        box.addWidget(user_input(message.text(), emotion))
+        # emotion = detect_emotion(message.text())
+        box.addWidget(user_input(message.text()))
         bot_input = chatbot_input(next_answer(blender_bot, message.text()))
         box.addWidget(bot_input)
         # Add the new elements to the history file.
         # TODO: Improve this function so we're not opening the file every time
         history = open("data/history.txt", "a")
-        history.write(message.text() + " " + emotion + "\n" + bot_input.text() + "\n")
+        history.write(message.text() + "\n" + bot_input.text() + "\n")
         analyse_store_answer(message.text(), '')
         message.setText("")
-
-
 
 def messages(messages_box, blender_bot):
     group_box = QGroupBox("New message")
@@ -100,14 +103,24 @@ def messages(messages_box, blender_bot):
     horizontal_box.addWidget(new_message_input)
     horizontal_box.addWidget(send_button)
 
+    # Create show emotion button
+    group_box_2 = QGroupBox("Sentiment")
+    horizontal_box_2 = QHBoxLayout()
+    emotion_button = QPushButton()
+    emotion_button.setIcon(QIcon("Images/emoji.png"))
+    emotion_button.clicked.connect(lambda: show_emotion(new_message_input.text(), horizontal_box_2))
+    horizontal_box.addWidget(emotion_button)
+
     # Add a button in order to input photos and videos
     import_file = QPushButton()
     import_file.setIcon(QIcon("Images/photo.png"))
     import_file.clicked.connect(lambda: getfile(import_file, messages_box))
     horizontal_box.addWidget(import_file)
 
+
     group_box.setLayout(horizontal_box)
-    return group_box
+    group_box_2.setLayout(horizontal_box_2)
+    return group_box, group_box_2
 
 
 # Add a separation between the new message and the history
@@ -175,7 +188,11 @@ class UserInterface(QMainWindow):
         grid.addWidget(new_message_on_bottom())
 
         # Add the input line for new messages
-        grid.addWidget(messages(vertical_box, self.blender_bot))
+        messages_box, emotion_box = messages(vertical_box, self.blender_bot)
+        grid.addWidget(messages_box)
+
+        grid.addWidget(emotion_box)
+
         self.central_widget.setLayout(grid)
 
 
