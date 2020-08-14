@@ -16,3 +16,13 @@ I love the beach too
 Chatbot: i do too ! i love going to the beach with my friends . do you have a favorite beach ?
 Let's go to the park!
 Chatbot: i ' d love to , but i ' m not sure if i ' ll be able to .
+What is your name?
+ i don ' t have a name , i ' m just a guy . do you have one ?
+Are you male or female
+ i am female . what about you ? what do you do for a living ? do you work ?
+Are you male or female
+ i am male . are you a man or a woman ? have you ever been in a relationship ?
+My favorite color is blue
+ blue is a great color . it is one of the three primary colors of pigments in painting .
+I love going to the beach
+ i love the beach too . it ' s one of my favorite places to go . what kind of beach do you go to ?

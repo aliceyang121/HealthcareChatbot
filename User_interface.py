@@ -168,24 +168,37 @@ class UserInterface(QMainWindow):
     # Change the persona
     def change_persona(self):
         # TODO: Set the persona and store it
-        popup = QDialog()
-        vertical_box = QVBoxLayout()
-        popup.setMinimumSize(500, 500)
-        popup.setWindowTitle("Change persona")
-        persona1 = QLineEdit('Sentence for the persona')
-        persona2 = QLineEdit('Sentence for the persona')
-        persona3 = QLineEdit('Sentence for the persona')
-        persona4 = QLineEdit('Sentence for the persona')
-        persona5 = QLineEdit('Sentence for the persona')
-        button_ok = QPushButton("ok")
-        vertical_box.addWidget(persona1)
-        vertical_box.addWidget(persona2)
-        vertical_box.addWidget(persona3)
-        vertical_box.addWidget(persona4)
-        vertical_box.addWidget(persona5)
-        vertical_box.addWidget(button_ok)
-        popup.setLayout(vertical_box)
-        popup.exec()
+        # popup = QDialog()
+        # vertical_box = QVBoxLayout()
+        # popup.setMinimumSize(500, 500)
+        # popup.setWindowTitle("Change persona")
+        # persona1 = QLineEdit('Sentence for the persona')
+        # persona2 = QLineEdit('Sentence for the persona')
+        # persona3 = QLineEdit('Sentence for the persona')
+        # persona4 = QLineEdit('Sentence for the persona')
+        # persona5 = QLineEdit('Sentence for the persona')
+        # button_ok = QPushButton("ok")
+        # vertical_box.addWidget(persona1)
+        # vertical_box.addWidget(persona2)
+        # vertical_box.addWidget(persona3)
+        # vertical_box.addWidget(persona4)
+        # vertical_box.addWidget(persona5)
+        # vertical_box.addWidget(button_ok)
+        # popup.setLayout(vertical_box)
+        # popup.exec()
+
+        alert = QMessageBox()
+        # Add text, warning icon and title
+        alert.setText("Are you sure you want to change the chatbot's persona?\n"
+                      "This action may take some time")
+        alert.setWindowTitle("Warning")
+        alert.setIcon(QMessageBox.Warning)
+        # Add the buttons to the message box
+        alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        retval = alert.exec()
+        if retval == 1024:
+            self.blender_bot.reset()
+            print("Persona reset")
 
 
         # Reset the chatbot and empty the history
@@ -193,8 +206,8 @@ class UserInterface(QMainWindow):
         # Create the message box
         alert = QMessageBox()
         # Add text, warning icon and title
-        alert.setText("Are you sure you want to reset the chatbot?\n"
-                      "All data will be loss\n "
+        alert.setText("Are you sure you want to reset chat history?\n"
+                      "All data will be lost.\n "
                       "This action may take some time")
         alert.setWindowTitle("Warning")
         alert.setIcon(QMessageBox.Warning)
@@ -219,6 +232,7 @@ class UserInterface(QMainWindow):
         reset.triggered.connect(lambda: self.reset_chatbot())
         # Create the menu and add the persona
         menu = self.menuBar()
+        menu.setNativeMenuBar(False)
         menu.addAction(persona)
         menu.addAction(reset)
 
