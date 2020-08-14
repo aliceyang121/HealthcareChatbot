@@ -1,2 +1,5 @@
 .idea/
 venv/
+/data/user_facts.txt
+/data/history.txt
+final_model.bin

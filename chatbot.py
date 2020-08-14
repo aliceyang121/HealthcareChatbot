@@ -11,27 +11,16 @@ def analyse_store_answer(user_input, bot_input):
             else:
                 user_input = user_input[1:]
                 user_input = "You" + user_input + "\n"
-
-            print("We will store: " + user_input)
             file_user_facts = open("data/user_facts.txt", "a")
             file_user_facts.write(user_input)
             file_user_facts.close()
             # TODO improve the condition to select a message to store
 
 
-# Print all the messages in the conversation
-def print_convs(convs):
-    for i in all_convs:
-        print(i)
-
-
 # Answer to the user
 def next_answer(blender_agent, user_input, boolean_finish=False):
-    # all_convs.append("You: {user_input}")
     blender_agent.observe({'text': user_input, "episode_done": boolean_finish})
     response = blender_agent.act()
-    # all_convs.append("BlenderBot: {}".format(response['text']))
-    # print("BlenderBot: {}".format(response['text']))
     return response['text']
 
 
@@ -51,11 +40,9 @@ def create_agent_and_persona(persona=''):
 
 if __name__ == '__main__':
     all_convs = []
-    blender_agent = create_agent_and_persona('Your persona: My name is Jean-Eudes')
+    blender_agent = create_agent_and_persona()
     user_input = ask_user_input()
     while user_input != '[EXIT]':
         bot_input = next_answer(blender_agent, user_input)
         user_input = ask_user_input()
         analyse_store_answer(user_input, bot_input)
-# TODO: link with the ui
-# TODO: Add the setup files (after python setup.py)
