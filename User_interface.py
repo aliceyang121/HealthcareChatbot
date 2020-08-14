@@ -61,23 +61,23 @@ def show_emotion(text, label):
     label.setText(emotion)
 
 # Function that return a QLabel with the user message color AND tracks user emotion
-def user_input(text):
-    # Define the message
-    user_input = QLabel(text)
-    # Set the color for the message
-    user_input.setStyleSheet("QLabel { background-color : lightblue}")
-    # Return the QLabel
-    return user_input
-
-
-# Function that return a QLabel with the chatbot message color
-def chatbot_input(text):
-    # Define the message
-    chatbot_input = QLabel(text)
-    # Set the color for the message
-    chatbot_input.setStyleSheet("QLabel { background-color : #C0C0C0}")
-    # Return the QLabel
-    return chatbot_input
+# def user_input(text):
+#     # Define the message
+#     user_input = QLabel(text)
+#     # Set the color for the message
+#     user_input.setStyleSheet("QLabel { background-color : lightblue}")
+#     # Return the QLabel
+#     return user_input
+#
+#
+# # Function that return a QLabel with the chatbot message color
+# def chatbot_input(text):
+#     # Define the message
+#     chatbot_input = QLabel(text)
+#     # Set the color for the message
+#     chatbot_input.setStyleSheet("QLabel { background-color : #C0C0C0}")
+#     # Return the QLabel
+#     return chatbot_input
 
 
 def message_history():
@@ -89,7 +89,7 @@ def message_history():
     scroll.setWidgetResizable(True)
     # Box where we add the message present in the history file
     message_history_box = QVBoxLayout()
-    doc = QTextDocument()
+    # doc = QTextDocument()
     # To know if the chatbot said the sentence or the user
     count = 0
     try:
@@ -100,13 +100,14 @@ def message_history():
         # Case where it's a user message
         if count % 2 == 0:
             # The emotion is the last word of the line
-            doc.setHtml(user_input(line).text())
-            user_text = wrap_text(doc.toPlainText())
+            # doc.setHtml(user_input(line).text())
+            # user_text = wrap_text(doc.toPlainText())
+            user_text = wrap_text(line)
             message_history_box.addWidget(BubbleWidget(user_text,left=False))
         # Chatbot message
         else:
-            doc.setHtml(chatbot_input(line).text())
-            bot_text = wrap_text(doc.toPlainText())
+            # doc.setHtml(chatbot_input(line).text())
+            bot_text = wrap_text(line)
             message_history_box.addWidget(BubbleWidget(bot_text,left=True,user=False))
         count = count + 1
     history.close()
@@ -141,21 +142,22 @@ def wrap_text(string, n=14):
 def add_new_message(message, box, blender_bot):
     # Add the message to the box only if there's a message
     if len(message.text()) > 0:
-        doc = QTextDocument()
-        doc.setHtml(user_input(message.text()).text())
-        user_text = wrap_text(doc.toPlainText())
+        # doc = QTextDocument()
+        # doc.setHtml(message(user))
+        user_text = wrap_text(message.text())
         # Add the user input to the ui
         box.addWidget(BubbleWidget(user_text,left=False))
         # Compute the bot input
-        bot_input = chatbot_input(next_answer(blender_bot, message.text()))
-        doc.setHtml(bot_input.text())
-        bot_text = wrap_text(doc.toPlainText())
+        # doc.setHtml(bot_input.text())
+        bot_text = wrap_text(next_answer(blender_bot, message.text()))
         # Add the bot input to the ui
         box.addWidget(BubbleWidget(bot_text, left=True, user=False))
         # Add the new elements to the history file.
         # TODO: Improve this function so we're not opening the file every time
         history = open("data/history.txt", "a")
-        history.write(message.text() + "\n" + bot_input.text()[8:] + "\n")
+        user_text = user_text.replace('\n', ' ')
+        bot_text = bot_text.replace('\n', ' ')
+        history.write(message.text() + "\n" + bot_text + "\n")
         # Store the answer if it's a relevant information about the user
         analyse_store_answer(message.text(), '')
         # Empty the message area
