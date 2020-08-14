@@ -1,22 +1,69 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QLabel, QFrame,
                              QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea, QFormLayout,
-                             QMainWindow, QMessageBox, QAction, QInputDialog, QDialog)
+                             QMainWindow, QMessageBox, QAction, QInputDialog, QDialog, QSpacerItem, QSizePolicy)
 from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import *
 from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
 import subprocess
 
+# Creates QLabel for texts
+class Bubble(QLabel):
+    def __init__(self,text,user=True):
+        super(Bubble,self).__init__(text)
+        self.setContentsMargins(5,5,5,5)
+        self.user = user
+        # Sets color of the text
+        if (user):
+            self.setStyleSheet("color: white;")
+        else:
+            self.setStyleSheet("color: black;")
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        path = QPainterPath()
+        p.setRenderHint(QPainter.Antialiasing,True)
+        path.addRoundedRect(0,0,self.width()-1,self.height()-1,5,5);
+        # Sets color for the text bubble
+        if (self.user):
+            p.setPen(QColor(0, 106, 255));
+            p.fillPath(path, QColor(0, 106, 255));
+        else:
+            p.setPen(QColor(211,211,211));
+            p.fillPath(path, QColor(211,211,211));
+        p.drawPath(path);
+        super(Bubble,self).paintEvent(e)
+
+# Creates Widget to hold Bubble Qlabel
+class BubbleWidget(QWidget):
+    def __init__(self,text,left=True, user=True):
+        super(BubbleWidget,self).__init__()
+        hbox = QHBoxLayout()
+        label = Bubble(text, user)
+
+        # Creates text bubble on right side
+        if not left:
+            hbox.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Expanding,QSizePolicy.Preferred))
+        hbox.addWidget(label)
+
+        # Creates text bubble on left side
+        if left:
+            hbox.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Expanding,QSizePolicy.Preferred))
+
+        hbox.setContentsMargins(0,0,0,0)
+
+        self.setLayout(hbox)
+        self.setContentsMargins(0,0,0,0)
 
 def show_emotion(text, label):
     emotion = detect_emotion(text)
     label.setText(emotion)
 
-
 # Function that return a QLabel with the user message color AND tracks user emotion
 def user_input(text):
     # Define the message
-    user_input = QLabel("User: " + text)
+    user_input = QLabel(text)
     # Set the color for the message
     user_input.setStyleSheet("QLabel { background-color : lightblue}")
     # Return the QLabel
@@ -26,7 +73,7 @@ def user_input(text):
 # Function that return a QLabel with the chatbot message color
 def chatbot_input(text):
     # Define the message
-    chatbot_input = QLabel("Chatbot: " + text)
+    chatbot_input = QLabel(text)
     # Set the color for the message
     chatbot_input.setStyleSheet("QLabel { background-color : #C0C0C0}")
     # Return the QLabel
@@ -42,7 +89,7 @@ def message_history():
     scroll.setWidgetResizable(True)
     # Box where we add the message present in the history file
     message_history_box = QVBoxLayout()
-
+    doc = QTextDocument()
     # To know if the chatbot said the sentence or the user
     count = 0
     try:
@@ -53,10 +100,14 @@ def message_history():
         # Case where it's a user message
         if count % 2 == 0:
             # The emotion is the last word of the line
-            message_history_box.addWidget(user_input(line))
+            doc.setHtml(user_input(line).text())
+            user_text = wrap_text(doc.toPlainText())
+            message_history_box.addWidget(BubbleWidget(user_text,left=False))
         # Chatbot message
         else:
-            message_history_box.addWidget(chatbot_input(line))
+            doc.setHtml(chatbot_input(line).text())
+            bot_text = wrap_text(doc.toPlainText())
+            message_history_box.addWidget(BubbleWidget(bot_text,left=True,user=False))
         count = count + 1
     history.close()
 
@@ -77,17 +128,30 @@ def getfile(self, box):
     image_input.setPixmap(pixmap)
     box.addWidget(image_input)
 
+def wrap_text(string, n=12):
+    '''returns a string where \\n is inserted between every n words'''
+    words = string.split()
+    ret = ''
+    for i in range(0, len(words), n):
+        ret += ' '.join(words[i:i+n]) + '\n'
+    ret = ret.rstrip()
+    return ret
 
 # When the user send a message
 def add_new_message(message, box, blender_bot):
     # Add the message to the box only if there's a message
     if len(message.text()) > 0:
+        doc = QTextDocument()
+        doc.setHtml(user_input(message.text()).text())
+        user_text = wrap_text(doc.toPlainText())
         # Add the user input to the ui
-        box.addWidget(user_input(message.text()))
+        box.addWidget(BubbleWidget(user_text,left=False))
         # Compute the bot input
         bot_input = chatbot_input(next_answer(blender_bot, message.text()))
+        doc.setHtml(bot_input.text())
+        bot_text = wrap_text(doc.toPlainText())
         # Add the bot input to the ui
-        box.addWidget(bot_input)
+        box.addWidget(BubbleWidget(bot_text, left=True, user=False))
         # Add the new elements to the history file.
         # TODO: Improve this function so we're not opening the file every time
         history = open("data/history.txt", "a")
@@ -206,8 +270,8 @@ class UserInterface(QMainWindow):
         # Create the message box
         alert = QMessageBox()
         # Add text, warning icon and title
-        alert.setText("Are you sure you want to reset chat history?\n"
-                      "All data will be lost.\n "
+        alert.setText("Are you sure you want to reset the chatbot?\n"
+                      "All data will be lost\n "
                       "This action may take some time")
         alert.setWindowTitle("Warning")
         alert.setIcon(QMessageBox.Warning)
@@ -225,7 +289,7 @@ class UserInterface(QMainWindow):
     # Add the menu with the change persona and reset chatbot buttons
     def set_menu(self):
         # Create the change persona option
-        persona = QAction("Change persona", self)
+        persona = QAction("Change Persona", self)
         persona.triggered.connect(lambda: self.change_persona())
         # Create the reset chatbot option
         reset = QAction("Reset Chatbot", self)
