@@ -128,14 +128,14 @@ def getfile(self, box):
     image_input.setPixmap(pixmap)
     box.addWidget(image_input)
 
-def wrap_text(string, n=12):
+def wrap_text(string, n=14):
     '''returns a string where \\n is inserted between every n words'''
     words = string.split()
-    ret = ''
+    final = ''
     for i in range(0, len(words), n):
-        ret += ' '.join(words[i:i+n]) + '\n'
-    ret = ret.rstrip()
-    return ret
+        final += ' '.join(words[i:i+n]) + '\n'
+    final = final.rstrip()
+    return final
 
 # When the user send a message
 def add_new_message(message, box, blender_bot):
