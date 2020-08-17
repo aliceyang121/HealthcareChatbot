@@ -7,6 +7,7 @@ from PyQt5.QtGui import *
 from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
 import subprocess
+import random
 
 # Creates QLabel for texts
 class Bubble(QLabel):
@@ -56,9 +57,35 @@ class BubbleWidget(QWidget):
         self.setLayout(hbox)
         self.setContentsMargins(0,0,0,0)
 
-def show_emotion(text, label):
+def show_emotion_and_music(text, label):
     emotion = detect_emotion(text)
-    label.setText(emotion)
+    # label.setText(emotion)
+
+    # Create the message box
+    alert = QMessageBox()
+    # Add text, warning icon and title
+    alert.setText("Your emotion is {}. Would you like some {} music?".format(emotion, emotion))
+    alert.setWindowTitle("Music Suggestion")
+    alert.setIcon(QMessageBox.Warning)
+    # Add the buttons to the message box
+    alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+    retval = alert.exec()
+    # If the user push ok, we reset
+    if retval == 1024:
+        # determine type of music
+        if emotion = "joy" :
+            label.setText(emotion + random_line('joy_music.txt'))
+        elif emotion = "fear" :
+            label.setText(emotion + random_line('fear_music.txt'))
+        elif emotion = "sadness" :
+            label.setText(emotion + random_line('sadness_music.txt'))
+        else :
+            label.setText(emotion + random_line('anger_music.txt'))
+
+
+def random_line(fname):
+    lines = open(fname).read().splitlines()
+    return random.choice(lines)
 
 # Function that return a QLabel with the user message color AND tracks user emotion
 # def user_input(text):
