@@ -65,7 +65,7 @@ def show_emotion_and_music(text, label):
     # Create the message box
     alert = QMessageBox()
     # Add text, warning icon and title
-    alert.setText("Your emotion is {}. Would you like some {} music?".format(emotion, emotion))
+    alert.setText("Your emotion is {}. Would you like some music?".format(emotion))
     alert.setWindowTitle("Music Suggestion")
     alert.setIcon(QMessageBox.Information)
     # Add the buttons to the message box
