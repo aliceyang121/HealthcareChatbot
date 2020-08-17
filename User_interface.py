@@ -8,6 +8,7 @@ from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
 import subprocess
 import random
+import webbrowser
 
 # Creates QLabel for texts
 class Bubble(QLabel):
@@ -58,34 +59,53 @@ class BubbleWidget(QWidget):
         self.setContentsMargins(0,0,0,0)
 
 def show_emotion_and_music(text, label):
-    emotion = detect_emotion(text)
-    # label.setText(emotion)
+    emotion = determine_overall_emotion()
+    label.setText(emotion)
 
     # Create the message box
     alert = QMessageBox()
     # Add text, warning icon and title
     alert.setText("Your emotion is {}. Would you like some {} music?".format(emotion, emotion))
     alert.setWindowTitle("Music Suggestion")
-    alert.setIcon(QMessageBox.Warning)
+    alert.setIcon(QMessageBox.Information)
     # Add the buttons to the message box
     alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
     retval = alert.exec()
     # If the user push ok, we reset
     if retval == 1024:
         # determine type of music
-        if emotion = "joy" :
-            label.setText(emotion + random_line('joy_music.txt'))
-        elif emotion = "fear" :
-            label.setText(emotion + random_line('fear_music.txt'))
-        elif emotion = "sadness" :
-            label.setText(emotion + random_line('sadness_music.txt'))
+        if emotion == "joy" :
+            string = random_line('music/joy_music.txt').split(";")
+        elif emotion == "fear" :
+            string = random_line('music/fear_music.txt').split(";")
+        elif emotion == "sadness" :
+            string = random_line('music/sadness_music.txt').split(";")
         else :
-            label.setText(emotion + random_line('anger_music.txt'))
+            string = random_line('music/anger_music.txt').split(";")
+
+        music_link = string[0]
+        music_name = string[1]
+        label.setText(emotion + "\nSong Recommendation: " + music_name)
+        webbrowser.open_new(music_link)
 
 
 def random_line(fname):
     lines = open(fname).read().splitlines()
     return random.choice(lines)
+
+def determine_overall_emotion():
+    input = ""
+    history = open("data/history.txt")
+    lines = history.readlines()
+    ctr = 0
+    for line in reversed(lines):
+        if ctr == 6:    # only look at the last 3 text exchanges
+            break
+        elif (ctr % 2 == 0):
+            input += " " + line
+    emotion = detect_emotion(input)
+    return emotion
+
 
 # Function that return a QLabel with the user message color AND tracks user emotion
 # def user_input(text):
@@ -216,7 +236,7 @@ def messages(message_history_box, blender_bot):
     emotion_button.setIcon(QIcon("Images/emoji.png"))
     emotion_display = QLabel()
     sentiment_box.addWidget(emotion_display)
-    emotion_button.clicked.connect(lambda: show_emotion(new_message_input.text(), emotion_display))
+    emotion_button.clicked.connect(lambda: show_emotion_and_music(new_message_input.text(), emotion_display))
     new_messages_box.addWidget(emotion_button)
 
     # Add a button in order to input photos and videos
