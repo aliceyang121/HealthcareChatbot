@@ -3,7 +3,7 @@ try:
 except ImportError:
     from transformers.modeling_bert import BertModel
 import torch
-from torch import nn, optim
+from torch import nn
 
 
 class SentimentClassifier(nn.Module):

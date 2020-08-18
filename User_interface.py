@@ -11,6 +11,8 @@ import subprocess
 import random
 import webbrowser
 import csv
+# pip install SpeechRecognition
+# import speech_recognition as sr
 
 
 # Creates QLabel for texts
@@ -200,6 +202,17 @@ def add_new_message(message, box, blender_bot):
         message.setText("")
 
 
+def audio_to_text():
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Say something!")
+        audio = r.listen(source)
+    # recognize speech using Google Speech Recognition
+    result = r.recognize_google(audio)
+    print("Google Speech Recognition thinks you said " + result)
+    return result
+
+
 def messages(message_history_box, blender_bot):
     group_box = QGroupBox("New message")
     new_messages_box = QHBoxLayout()
@@ -235,6 +248,12 @@ def messages(message_history_box, blender_bot):
     # Get the file and add it to the message history
     import_file.clicked.connect(lambda: getfile(import_file, message_history_box))
     new_messages_box.addWidget(import_file)
+
+    audio_button = QPushButton()
+    audio_button.setIcon(QIcon('Images/audio.png'))
+    import_file.clicked.connect(lambda: add_new_message(audio_to_text(), message_history_box, blender_bot))
+    new_messages_box.addWidget(audio_button)
+
     group_box.setLayout(new_messages_box)
     sentiment_group_box.setLayout(sentiment_box)
     return group_box, sentiment_group_box
@@ -252,6 +271,20 @@ def new_message_on_bottom():
     return frame
 
 
+def add_memory():
+    try:
+        user_facts = open("data/user_facts.csv", 'r')
+    except FileNotFoundError:
+        user_facts = open("data/user_facts.csv", 'w')
+    question = []
+    answer = []
+    reader = csv.reader(user_facts, delimiter=';')
+    for row in reader:
+        question.append(row[0])
+        answer.append(row[1])
+    return question, answer
+
+
 class UserInterface(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
@@ -261,7 +294,7 @@ class UserInterface(QMainWindow):
         self.blender_bot = create_agent_and_persona()
         self.blender_bot.last_message = ""
         self.blender_bot.embedder = SentenceTransformer('roberta-base-nli-stsb-mean-tokens')
-        self.blender_bot.memory = self.add_memory()
+        self.blender_bot.memory = add_memory()
         self.title = "Healthcare Chatbot"
         self.setWindowTitle("Healthcare Chatbot")
         # Set the size of the window
@@ -270,16 +303,6 @@ class UserInterface(QMainWindow):
         self.add_scrollbar_widgets()
         # Add the menu
         self.set_menu()
-
-    def add_memory(self):
-        user_facts = open("data/user_facts.csv", 'r')
-        question = []
-        answer = []
-        reader = csv.reader(user_facts, delimiter=';')
-        for row in reader:
-            question.append(row[0])
-            answer.append(row[1])
-        return question, answer
 
     # Change the persona
     def change_persona(self):
@@ -332,8 +355,8 @@ class UserInterface(QMainWindow):
         retval = alert.exec()
         # If the user push ok, we reset
         if retval == 1024:
-            f = open("data/history.txt", 'w').close()
-            f = open("data/user_facts.csv", 'w').close()
+            open("data/history.txt", 'w').close()
+            open("data/user_facts.csv", 'w').close()
             self.blender_bot.reset()
             self.close()
             subprocess.call("python" + " User_interface.py", shell=True)
