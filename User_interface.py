@@ -272,16 +272,17 @@ def new_message_on_bottom():
 
 
 def add_memory():
-    try:
-        user_facts = open("data/user_facts.csv", 'r')
-    except FileNotFoundError:
-        user_facts = open("data/user_facts.csv", 'w')
     question = []
     answer = []
-    reader = csv.reader(user_facts, delimiter=';')
-    for row in reader:
-        question.append(row[0])
-        answer.append(row[1])
+    try:
+        user_facts = open("data/user_facts.csv", 'r')
+        reader = csv.reader(user_facts, delimiter=';')
+        for row in reader:
+            question.append(row[0])
+            answer.append(row[1])
+    except FileNotFoundError:
+        user_facts = open("data/user_facts.csv", 'w')
+    user_facts.close()
     return question, answer
 
 

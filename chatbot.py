@@ -1,6 +1,5 @@
 from parlai.core.agents import create_agent_from_model_file
 from sentence_transformers import SentenceTransformer, util
-from numpy import argpartition
 import csv
 
 
