@@ -2,22 +2,25 @@ import sys
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QLabel, QFrame,
                              QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea, QFormLayout,
                              QMainWindow, QMessageBox, QAction, QInputDialog, QDialog, QSpacerItem, QSizePolicy)
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtGui import *
+from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QColor
+from sentence_transformers import SentenceTransformer
+
 from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
 import subprocess
 import random
 import webbrowser
+import csv
+
 
 # Creates QLabel for texts
 class Bubble(QLabel):
-    def __init__(self,text,user=True):
-        super(Bubble,self).__init__(text)
-        self.setContentsMargins(5,5,5,5)
+    def __init__(self, text, user=True):
+        super(Bubble, self).__init__(text)
+        self.setContentsMargins(5, 5, 5, 5)
         self.user = user
         # Sets color of the text
-        if (user):
+        if user:
             self.setStyleSheet("color: white;")
         else:
             self.setStyleSheet("color: black;")
@@ -25,38 +28,40 @@ class Bubble(QLabel):
     def paintEvent(self, e):
         p = QPainter(self)
         path = QPainterPath()
-        p.setRenderHint(QPainter.Antialiasing,True)
-        path.addRoundedRect(0,0,self.width()-1,self.height()-1,5,5);
+        p.setRenderHint(QPainter.Antialiasing, True)
+        path.addRoundedRect(0, 0, self.width() - 1, self.height() - 1, 5, 5);
         # Sets color for the text bubble
-        if (self.user):
+        if self.user:
             p.setPen(QColor(0, 106, 255));
             p.fillPath(path, QColor(0, 106, 255));
         else:
-            p.setPen(QColor(211,211,211));
-            p.fillPath(path, QColor(211,211,211));
+            p.setPen(QColor(211, 211, 211));
+            p.fillPath(path, QColor(211, 211, 211));
         p.drawPath(path);
-        super(Bubble,self).paintEvent(e)
+        super(Bubble, self).paintEvent(e)
+
 
 # Creates Widget to hold Bubble Qlabel
 class BubbleWidget(QWidget):
-    def __init__(self,text,left=True, user=True):
-        super(BubbleWidget,self).__init__()
+    def __init__(self, text, left=True, user=True):
+        super(BubbleWidget, self).__init__()
         hbox = QHBoxLayout()
         label = Bubble(text, user)
 
         # Creates text bubble on right side
         if not left:
-            hbox.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Expanding,QSizePolicy.Preferred))
+            hbox.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Preferred))
         hbox.addWidget(label)
 
         # Creates text bubble on left side
         if left:
-            hbox.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Expanding,QSizePolicy.Preferred))
+            hbox.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Preferred))
 
-        hbox.setContentsMargins(0,0,0,0)
+        hbox.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hbox)
-        self.setContentsMargins(0,0,0,0)
+        self.setContentsMargins(0, 0, 0, 0)
+
 
 def show_emotion_and_music(text, label):
     emotion = determine_overall_emotion()
@@ -74,13 +79,13 @@ def show_emotion_and_music(text, label):
     # If the user push ok, we reset
     if retval == 1024:
         # determine type of music
-        if emotion == "joy" :
+        if emotion == "joy":
             string = random_line('music/joy_music.txt').split(";")
-        elif emotion == "fear" :
+        elif emotion == "fear":
             string = random_line('music/fear_music.txt').split(";")
-        elif emotion == "sadness" :
+        elif emotion == "sadness":
             string = random_line('music/sadness_music.txt').split(";")
-        else :
+        else:
             string = random_line('music/anger_music.txt').split(";")
 
         music_link = string[0]
@@ -93,38 +98,19 @@ def random_line(fname):
     lines = open(fname).read().splitlines()
     return random.choice(lines)
 
+
 def determine_overall_emotion():
     input = ""
     history = open("data/history.txt")
     lines = history.readlines()
     ctr = 0
     for line in reversed(lines):
-        if ctr == 6:    # only look at the last 3 text exchanges
+        if ctr == 6:  # only look at the last 3 text exchanges
             break
         elif (ctr % 2 == 0):
             input += " " + line
     emotion = detect_emotion(input)
     return emotion
-
-
-# Function that return a QLabel with the user message color AND tracks user emotion
-# def user_input(text):
-#     # Define the message
-#     user_input = QLabel(text)
-#     # Set the color for the message
-#     user_input.setStyleSheet("QLabel { background-color : lightblue}")
-#     # Return the QLabel
-#     return user_input
-#
-#
-# # Function that return a QLabel with the chatbot message color
-# def chatbot_input(text):
-#     # Define the message
-#     chatbot_input = QLabel(text)
-#     # Set the color for the message
-#     chatbot_input.setStyleSheet("QLabel { background-color : #C0C0C0}")
-#     # Return the QLabel
-#     return chatbot_input
 
 
 def message_history():
@@ -150,12 +136,12 @@ def message_history():
             # doc.setHtml(user_input(line).text())
             # user_text = wrap_text(doc.toPlainText())
             user_text = wrap_text(line)
-            message_history_box.addWidget(BubbleWidget(user_text,left=False))
+            message_history_box.addWidget(BubbleWidget(user_text, left=False))
         # Chatbot message
         else:
             # doc.setHtml(chatbot_input(line).text())
             bot_text = wrap_text(line)
-            message_history_box.addWidget(BubbleWidget(bot_text,left=True,user=False))
+            message_history_box.addWidget(BubbleWidget(bot_text, left=True, user=False))
         count = count + 1
     history.close()
 
@@ -176,14 +162,16 @@ def getfile(self, box):
     image_input.setPixmap(pixmap)
     box.addWidget(image_input)
 
+
 def wrap_text(string, n=14):
-    '''returns a string where \\n is inserted between every n words'''
+    # returns a string where \\n is inserted between every n words
     words = string.split()
     final = ''
     for i in range(0, len(words), n):
-        final += ' '.join(words[i:i+n]) + '\n'
+        final += ' '.join(words[i:i + n]) + '\n'
     final = final.rstrip()
     return final
+
 
 # When the user send a message
 def add_new_message(message, box, blender_bot):
@@ -193,10 +181,12 @@ def add_new_message(message, box, blender_bot):
         # doc.setHtml(message(user))
         user_text = wrap_text(message.text())
         # Add the user input to the ui
-        box.addWidget(BubbleWidget(user_text,left=False))
+        box.addWidget(BubbleWidget(user_text, left=False))
         # Compute the bot input
         # doc.setHtml(bot_input.text())
+        analyse_store_answer(message.text(), blender_bot.last_message)
         bot_text = wrap_text(next_answer(blender_bot, message.text()))
+        blender_bot.last_message = bot_text
         # Add the bot input to the ui
         box.addWidget(BubbleWidget(bot_text, left=True, user=False))
         # Add the new elements to the history file.
@@ -206,7 +196,6 @@ def add_new_message(message, box, blender_bot):
         bot_text = bot_text.replace('\n', ' ')
         history.write(message.text() + "\n" + bot_text + "\n")
         # Store the answer if it's a relevant information about the user
-        analyse_store_answer(message.text(), '')
         # Empty the message area
         message.setText("")
 
@@ -217,7 +206,8 @@ def messages(message_history_box, blender_bot):
     # Add the input line to the horizontal box
     new_message_input = QLineEdit()
     # If we press the ENTER key, we send the message
-    new_message_input.returnPressed.connect(lambda: add_new_message(new_message_input, message_history_box, blender_bot))
+    new_message_input.returnPressed.connect(
+        lambda: add_new_message(new_message_input, message_history_box, blender_bot))
     # Create the send button
     # TODO: If there's no text, display the photo button, otherwise the send button (not both)
     send_button = QPushButton()
@@ -269,6 +259,9 @@ class UserInterface(QMainWindow):
         self.setCentralWidget(self.central_widget)
         # Initialise the blender bot
         self.blender_bot = create_agent_and_persona()
+        self.blender_bot.last_message = ""
+        self.blender_bot.embedder = SentenceTransformer('roberta-base-nli-stsb-mean-tokens')
+        self.blender_bot.memory = self.add_memory()
         self.title = "Healthcare Chatbot"
         self.setWindowTitle("Healthcare Chatbot")
         # Set the size of the window
@@ -277,6 +270,16 @@ class UserInterface(QMainWindow):
         self.add_scrollbar_widgets()
         # Add the menu
         self.set_menu()
+
+    def add_memory(self):
+        user_facts = open("data/user_facts.csv", 'r')
+        question = []
+        answer = []
+        reader = csv.reader(user_facts, delimiter=';')
+        for row in reader:
+            question.append(row[0])
+            answer.append(row[1])
+        return question, answer
 
     # Change the persona
     def change_persona(self):
@@ -313,8 +316,8 @@ class UserInterface(QMainWindow):
             self.blender_bot.reset()
             print("Persona reset")
 
-
         # Reset the chatbot and empty the history
+
     def reset_chatbot(self):
         # Create the message box
         alert = QMessageBox()
@@ -330,7 +333,7 @@ class UserInterface(QMainWindow):
         # If the user push ok, we reset
         if retval == 1024:
             f = open("data/history.txt", 'w').close()
-            f = open("data/user_facts.txt", 'w').close()
+            f = open("data/user_facts.csv", 'w').close()
             self.blender_bot.reset()
             self.close()
             subprocess.call("python" + " User_interface.py", shell=True)
