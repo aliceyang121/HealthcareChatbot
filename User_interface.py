@@ -108,7 +108,7 @@ def determine_overall_emotion():
     for line in reversed(lines):
         if ctr == 6:  # only look at the last 3 text exchanges
             break
-        elif (ctr % 2 == 0):
+        elif ctr % 2 == 0:
             input += " " + line
     emotion = detect_emotion(input)
     return emotion
@@ -123,7 +123,6 @@ def message_history():
     scroll.setWidgetResizable(True)
     # Box where we add the message present in the history file
     message_history_box = QVBoxLayout()
-    # doc = QTextDocument()
     # To know if the chatbot said the sentence or the user
     count = 0
     try:
@@ -278,25 +277,6 @@ def new_message_on_bottom():
     return frame
 
 
-# Add all the question and answers to the robot memory
-def add_memory():
-    question = []
-    answer = []
-    # Open the file and fill the question and answer
-    try:
-        user_facts = open("data/user_facts.csv", 'r')
-        reader = csv.reader(user_facts, delimiter=';')
-        for row in reader:
-            question.append(row[0])
-            answer.append(row[1])
-    # Case where the file doesn't exists, we create it
-    except FileNotFoundError:
-        user_facts = open("data/user_facts.csv", 'w')
-    # Close the file
-    user_facts.close()
-    return question, answer
-
-
 class UserInterface(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
@@ -306,7 +286,7 @@ class UserInterface(QMainWindow):
         self.blender_bot = create_agent_and_persona()
         self.blender_bot.last_message = ""
         self.blender_bot.embedder = SentenceTransformer('roberta-base-nli-stsb-mean-tokens')
-        self.blender_bot.memory = add_memory()
+        self.blender_bot.memory = self.add_memory()
         self.title = "Healthcare Chatbot"
         self.setWindowTitle("Healthcare Chatbot")
         # Set the size of the window
@@ -401,6 +381,26 @@ class UserInterface(QMainWindow):
         # Add the sentiment display
         grid.addWidget(emotion_box)
         self.central_widget.setLayout(grid)
+
+    # Add all the question and answers to the robot memory
+    def add_memory(self):
+        question = []
+        answer = []
+        # Open the file and fill the question and answer
+        try:
+            user_facts = open("data/user_facts.csv", 'r')
+            reader = csv.reader(user_facts, delimiter=';')
+            for row in reader:
+                question.append(row[0])
+                answer.append(row[1])
+        # Case where the file doesn't exists, we create it
+        except FileNotFoundError:
+            user_facts = open("data/user_facts.csv", 'w')
+        # Close the file
+        user_facts.close()
+        # Convert the facts to tensors
+        questions_embedding = self.blender_bot.embedder.encode(question, convert_to_tensor=True)
+        return questions_embedding, answer
 
 
 # TODO: add persona

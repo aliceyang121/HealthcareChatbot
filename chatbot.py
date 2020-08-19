@@ -1,93 +1,105 @@
 from parlai.core.agents import create_agent_from_model_file
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import util
 import csv
+from random import random, choice
 
 
+# Select the question part of the bot input
 def extract_question(input):
+    # Split before the ?
     partition = input.partition('?')
     input = partition[0] + partition[1]
+    # Split before . if there's one
     input = input.partition('.')
+    # While there is multiple sentece, we delete them
     while '.' in input[1]:
         input = input[2]
         input = input.partition('.')
     input = input[0]
+    # Change to get a question ask by the user
     input = input.replace('your ', 'my ')
     input = input.replace('are you ', 'am I ')
     input = input.replace('you ', 'I ')
-    input = input.replace('my ', 'your ')
+    return input
+
+
+# Select the first sentence of the answer
+def extract_answer(input):
+    # Select the part before the .
+    partition = input.partition('.')
+    input = partition[0] + partition[1]
+    # Select the part before the !
+    partition = input.partition('!')
+    input = partition[0] + partition[1]
+    # Change to get an answer describing the user
+    input = input.replace('my ', 'Your ')
+    input = input.replace('am I ', 'are you ')
+    input = input.replace('I ', 'you ')
     return input
 
 
 # Add the user input and the question if necessary
 def analyse_store_answer(user_input, bot_input):
-    bot_input = extract_question(bot_input)
+    # We store if the sentence start by I'm or I+something and if the bot was asking a question
     if '?' in bot_input and user_input[0] == 'I' and len(user_input) > 5:
         if user_input[1:4] == "'m " or user_input[1] == ' ':
-            if user_input[1:4] == "'m ":
-                user_input = user_input[3:]
-                user_input = "You are" + user_input
-            else:
-                user_input = user_input[1:]
-                user_input = "You" + user_input
+            # Extract the question in the bot input
+            bot_input = extract_question(bot_input)
+            # Save the question and the answer
             file_user_facts = open("data/user_facts.csv", 'a')
             writer = csv.writer(file_user_facts, delimiter=';')
-            writer.writerow([bot_input.replace('\n', " "), user_input])
+            writer.writerow([bot_input.replace('\n', " "), extract_answer(user_input)])
+            file_user_facts.close()
 
 
+# Search for the max of a list and return it with the index
 def max_index(list_value):
     index = 0
     maximum = 0
     i = 0
     for element in list_value:
-        if element>maximum:
+        if element > maximum:
             maximum = element
             index = i
         i = i+1
     return maximum, index
 
 
+def add_generic_question(bot_input):
+    if '?' not in bot_input:
+        threshold = 0.8
+        rdm = random()
+        if rdm > threshold:
+            file = open("data/generic_questions.txt")
+            bot_input = bot_input + choice(file.read().splitlines())
+            file.close()
+    return bot_input
+
+
 # Answer to the user
 def next_answer(blender_agent, user_input, boolean_finish=False):
     blender_agent.observe({'text': user_input, "episode_done": boolean_finish})
-    questions, answer = blender_agent.memory
+    # Extract the memory
+    questions_embedding, answer = blender_agent.memory
+    # Convert the user_input to a tensor
     query_embedding = blender_agent.embedder.encode(user_input, convert_to_tensor=True)
     try:
-        facts_embedding = blender_agent.embedder.encode(questions, convert_to_tensor=True)
-        cos_scores = util.pytorch_cos_sim(query_embedding, facts_embedding)[0]
+        # Find the closest sentence in the facts compared to the user input
+        cos_scores = util.pytorch_cos_sim(query_embedding, questions_embedding)[0]
         top_result, index = max_index(cos_scores)
     except RuntimeError:
         top_result = 0
-    if top_result > 0.9:
+    # If the user is asking a question close to the one in the stored question we respond with the appropriate answer
+    if top_result > 0.65:
         response = blender_agent.act(answer[index], from_db=True)
+    # Else we use the blender_agent answer
     else:
         response = blender_agent.act()
     return response['text']
 
 
-# Ask the user for an input and check if the input is valid
-def ask_user_input():
-    user_input = input('You:')
-    while user_input == '':
-        user_input = input('The message was empty, enter your message:')
-    return user_input
-
-
+# Create the agent and return it
 def create_agent_and_persona(persona=''):
     blender_agent = create_agent_from_model_file("zoo:blender/blender_90M/model")
     blender_agent.observe({'text': persona})
     return blender_agent
-
-
-if __name__ == '__main__':
-    # Find the closest 5 sentences of the corpus for each query sentence based on cosine similarit
-    embedder = SentenceTransformer('roberta-base-nli-stsb-mean-tokens')
-    user_input = ['Hello', "Bonjour"]
-    query_embedding = embedder.encode(user_input, convert_to_tensor=True)
-    cos_scores = util.pytorch_cos_sim(query_embedding, user_input_em)[0]
-
-    # We use np.argpartition, to only partially sort the top_k results
-    top_result = max(-cos_scores)
-
-    print("\n\n======================\n\n")
-    print("Query:", user_input)
-    print(user_input.strip(), "(Score: %.4f)" % cos_scores)
