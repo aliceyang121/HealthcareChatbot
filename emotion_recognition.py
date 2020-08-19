@@ -67,4 +67,4 @@ def detect_emotion(review_text):
 
 if __name__ == '__main__':
     review_text = input("Enter sentence: ")
-    print(f'Sentiment: {emotion_recognition(review_text)}')
+    print(f'Sentiment: {detect_emotion(review_text)}')

@@ -65,9 +65,7 @@ class BubbleWidget(QWidget):
 
 
 def show_emotion_and_music(text, label):
-    print("before determine_overall_emotion")
     emotion = determine_overall_emotion()
-    print("after determine_overall_emotion")
     label.setText(emotion)
 
     # Create the message box
@@ -97,7 +95,6 @@ def show_emotion_and_music(text, label):
         webbrowser.open_new(music_link)
 
 def determine_overall_emotion():
-    print("inside determine_overall_emotion")
     history = open("data/history.txt")
     lines = history.readlines()
     ctr = 0
@@ -105,9 +102,10 @@ def determine_overall_emotion():
     for line in reversed(lines):
         if ctr == 6:  # only look at the last 3 text exchanges
             break
-        elif ctr % 2 == 0:
+        elif ctr % 2 != 0:
             emotion = detect_emotion(line)
             emotions.append(emotion)
+        ctr += 1
 
     # check to see if all emotions are the same
     same_emotions = all(emo == emotions[0] for emo in emotions)
@@ -119,27 +117,12 @@ def determine_overall_emotion():
 
 def video_emotion():
     # TODO: implement the model for detecting emotion from video
-    print("video_emotion")
     return "fear"   # placeholder for now
 
 
 def random_line(fname):
     lines = open(fname).read().splitlines()
     return random.choice(lines)
-
-
-def determine_overall_emotion():
-    input = ""
-    history = open("data/history.txt")
-    lines = history.readlines()
-    ctr = 0
-    for line in reversed(lines):
-        if ctr == 6:  # only look at the last 3 text exchanges
-            break
-        elif ctr % 2 == 0:
-            input += " " + line
-    emotion = detect_emotion(input)
-    return emotion
 
 
 def message_history():
