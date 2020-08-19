@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QLabel, QFrame,
-                             QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea, QFormLayout,
-                             QMainWindow, QMessageBox, QAction, QInputDialog, QDialog, QSpacerItem, QSizePolicy)
+                             QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea,
+                             QMainWindow, QMessageBox, QAction, QSpacerItem, QSizePolicy)
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QColor
 from sentence_transformers import SentenceTransformer
 
@@ -11,8 +11,7 @@ import subprocess
 import random
 import webbrowser
 import csv
-# pip install SpeechRecognition
-# import speech_recognition as sr
+from speech_recognition import Recognizer, Microphone, UnknownValueError
 
 
 # Creates QLabel for texts
@@ -202,17 +201,25 @@ def add_new_message(message, box, blender_bot):
         message.setText("")
 
 
-def audio_to_text():
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("Say something!")
+# Extract audio from the microphone and convert it to text
+def audio_to_text(message_input):
+    # initialise the recognizer
+    r = Recognizer()
+    # Use the sysdefault microphone
+    for i, microphone_name in enumerate(Microphone.list_microphone_names()):
+        if microphone_name == "sysdefault":
+            micro = Microphone(device_index=i)
+    with micro as source:
+        # Extract the audio and convert it to text
         audio = r.listen(source)
-    # recognize speech using Google Speech Recognition
-    result = r.recognize_google(audio)
-    print("Google Speech Recognition thinks you said " + result)
-    return result
+    # recognize speech using Google Speech Recognition and add it to the text input area
+    try:
+        message_input.setText(r.recognize_google(audio))
+    except UnknownValueError:
+        message_input.setText('The audio was not understood')
 
 
+# Add the message input and the buttons
 def messages(message_history_box, blender_bot):
     group_box = QGroupBox("New message")
     new_messages_box = QHBoxLayout()
@@ -251,7 +258,7 @@ def messages(message_history_box, blender_bot):
 
     audio_button = QPushButton()
     audio_button.setIcon(QIcon('Images/audio.png'))
-    import_file.clicked.connect(lambda: add_new_message(audio_to_text(), message_history_box, blender_bot))
+    audio_button.clicked.connect(lambda: audio_to_text(new_message_input))
     new_messages_box.addWidget(audio_button)
 
     group_box.setLayout(new_messages_box)
@@ -271,17 +278,21 @@ def new_message_on_bottom():
     return frame
 
 
+# Add all the question and answers to the robot memory
 def add_memory():
     question = []
     answer = []
+    # Open the file and fill the question and answer
     try:
         user_facts = open("data/user_facts.csv", 'r')
         reader = csv.reader(user_facts, delimiter=';')
         for row in reader:
             question.append(row[0])
             answer.append(row[1])
+    # Case where the file doesn't exists, we create it
     except FileNotFoundError:
         user_facts = open("data/user_facts.csv", 'w')
+    # Close the file
     user_facts.close()
     return question, answer
 
