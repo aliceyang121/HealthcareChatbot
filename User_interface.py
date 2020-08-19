@@ -103,7 +103,7 @@ def determine_overall_emotion():
         if ctr == 6:  # only look at the last 3 text exchanges
             break
         elif ctr % 2 != 0:
-            emotion = detect_emotion(line)
+            emotion, probability = detect_emotion(line)
             emotions.append(emotion)
         ctr += 1
 

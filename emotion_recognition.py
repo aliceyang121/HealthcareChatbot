@@ -3,7 +3,9 @@ try:
 except ImportError:
     from transformers.modeling_bert import BertModel
 import torch
+import tensorflow as tf
 from torch import nn
+import pandas as pd
 
 
 class SentimentClassifier(nn.Module):
@@ -22,6 +24,16 @@ class SentimentClassifier(nn.Module):
         output = self.drop(pooled_output)
         return self.out(output)
 
+def prediction_probabilities(model, output, class_names):
+    model = model.eval()
+    prediction_probs = []
+    with torch.no_grad():
+        probs = nn.functional.softmax(output, dim=1)
+        prediction_probs.extend(probs)
+        prediction_probs = torch.stack(prediction_probs).cpu()
+    pred_df = pd.DataFrame({'class_names': class_names, 'values': prediction_probs[0]})
+    max_probability = max(pred_df['values'])
+    return max_probability
 
 def detect_emotion(review_text):
     # set device to cpu
@@ -62,9 +74,12 @@ def detect_emotion(review_text):
     output = model(input_ids, attention_mask)
     _, prediction = torch.max(output, dim=1)
 
-    return class_names[prediction]
+    probability = prediction_probabilities(model, output, class_names) * 100
+
+    return class_names[prediction], probability
 
 
 if __name__ == '__main__':
     review_text = input("Enter sentence: ")
-    print(f'Sentiment: {detect_emotion(review_text)}')
+    sentiment, probability = detect_emotion(review_text)
+    print(f'Sentiment: {sentiment} \n Probability: {probability}')
