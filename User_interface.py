@@ -11,6 +11,7 @@ import subprocess
 from random import choice
 import webbrowser
 import csv
+import pandas as pd
 from speech_recognition import Recognizer, Microphone, UnknownValueError
 
 
@@ -65,8 +66,8 @@ class BubbleWidget(QWidget):
 
 
 def show_emotion_and_music(text, label):
-    emotion = determine_overall_emotion()
-    label.setText(emotion)
+    emotion, probability = determine_overall_emotion()
+    label.setText("Emotion: " + emotion + "\nProbability: " + probability)
 
     # Create the message box
     alert = QMessageBox()
@@ -95,29 +96,33 @@ def show_emotion_and_music(text, label):
         webbrowser.open_new(music_link)
 
 def determine_overall_emotion():
-    history = open("data/history.txt")
-    lines = history.readlines()
+    history = open("data/history.csv", 'r')
+    history_reader = csv.reader(history, delimiter=';')
     ctr = 0
     emotions = []
-    for line in reversed(lines):
-        if ctr == 6:  # only look at the last 3 text exchanges
+    probabilities = []
+    for line in reversed(list(history_reader)):
+        if ctr == 3:  # only look at the last 3 text exchanges
             break
-        elif ctr % 2 != 0:
-            emotion, probability = detect_emotion(line)
+        elif (line[0] == 'U'):
+            emotion, probability = detect_emotion(line[1])
             emotions.append(emotion)
-        ctr += 1
+            probabilities.append(probability)
+            ctr += 1
 
     # check to see if all emotions are the same
     same_emotions = all(emo == emotions[0] for emo in emotions)
 
     if same_emotions:
-        return emotions[0]
+        lowest_probability = str(min(probabilities))
+        return emotions[0], lowest_probability
+
     else:
         return video_emotion()
 
 def video_emotion():
     # TODO: implement the model for detecting emotion from video
-    return "fear"   # placeholder for now
+    return "fear", "NA"   # placeholder for now
 
 
 def random_line(fname):
@@ -153,13 +158,10 @@ def wrap_text(string, n=14):
 def add_new_message(message, box, blender_bot):
     # Add the message to the box only if there's a message
     if len(message.text()) > 0:
-        # doc = QTextDocument()
-        # doc.setHtml(message(user))
         user_text = wrap_text(message.text())
         # Add the user input to the ui
         box.addWidget(BubbleWidget(user_text, left=False))
         # Compute the bot input
-        # doc.setHtml(bot_input.text())
         analyse_store_answer(message.text(), blender_bot.last_message)
         bot_text = wrap_text(next_answer(blender_bot, message.text()))
         blender_bot.last_message = bot_text
@@ -167,10 +169,15 @@ def add_new_message(message, box, blender_bot):
         box.addWidget(BubbleWidget(bot_text, left=True, user=False))
         # Add the new elements to the history file.
         # TODO: Improve this function so we're not opening the file every time
-        history = open("data/history.txt", "a")
         bot_text = bot_text.replace('\n', ' ')
-        history.write(message.text() + "\n" + bot_text + "\n")
+        history = open("data/history.csv", 'a')
+        writer = csv.writer(history, delimiter=';')
+        writer.writerow(['U', message.text()])
+        writer.writerow(['C', bot_text])
         history.close()
+        # history_csv.append({'type': 'U', 'message': message.text()})
+        # history_df.append({'type': 'C', 'message': bot_text})
+        # history_df.to_csv("data/history.csv")
         # Store the answer if it's a relevant information about the user
         # Empty the message area
         message.setText("")
@@ -323,7 +330,7 @@ class UserInterface(QMainWindow):
         retval = alert.exec()
         # If the user push ok, we reset
         if retval == 1024:
-            open("data/history.txt", 'w').close()
+            open("data/history.csv", 'w').close()
             open("data/user_facts.csv", 'w').close()
             self.blender_bot.reset()
             self.close()
@@ -346,6 +353,14 @@ class UserInterface(QMainWindow):
     def add_scrollbar_widgets(self):
         # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
         grid = QGridLayout(self)
+
+        # Open chat history
+        try:
+            history = open("data/history.csv", 'a')
+            history_reader = csv.reader(history, delimiter=';')
+        except FileNotFoundError:
+            history = open("data/history.csv", "w+")
+
         # Add the message history
         scroll_area, message_history_box = self.message_history()
         grid.addWidget(scroll_area)
@@ -391,31 +406,28 @@ class UserInterface(QMainWindow):
         # Box where we add the message present in the history file
         message_history_box = QVBoxLayout()
         # To know if the chatbot said the sentence or the user
-        count = 0
-        try:
-            history = open("data/history.txt", 'r')
-        except FileNotFoundError:
-            history = open("data/history.txt", "w+")
-        for line in history:
+        history = open("data/history.csv", 'r')
+        history_reader = csv.reader(history, delimiter=';')
+        for row in history_reader:
             # Case where it's a user message
-            if count % 2 == 0:
+            if (row[0] == 'U'):
                 # The emotion is the last word of the line
-                user_text = wrap_text(line)
+                user_text = wrap_text(row[1])
                 message_history_box.addWidget(BubbleWidget(user_text, left=False))
             # Chatbot message
             else:
                 # doc.setHtml(chatbot_input(line).text())
-                bot_text = wrap_text(line)
+                bot_text = wrap_text(row[1])
                 message_history_box.addWidget(BubbleWidget(bot_text, left=True, user=False))
-            count = count + 1
         history.close()
         # Add the greetings
-        print(self.blender_bot.last_message)
+        # print(self.blender_bot.last_message)
         self.blender_bot.observe({'text': '', "episode_done": False})
         self.blender_bot.self_observe({'text': self.blender_bot.last_message, "episode_done": False})
         message_history_box.addWidget(BubbleWidget(self.blender_bot.last_message, left=True, user=False))
-        history = open("data/history.txt", "a")
-        history.write(self.blender_bot.last_message + '\n')
+        history = open("data/history.csv", 'a')
+        writer = csv.writer(history, delimiter=';')
+        writer.writerow(['C', self.blender_bot.last_message])
         history.close()
         # Add the messages to the box
         widget.setLayout(message_history_box)
