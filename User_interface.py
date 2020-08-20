@@ -6,9 +6,9 @@ from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QColor
 from sentence_transformers import SentenceTransformer
 
 from emotion_recognition import detect_emotion
-from chatbot import create_agent_and_persona, next_answer, analyse_store_answer
+from chatbot import create_agent_and_persona, next_answer, analyse_store_answer, greetings
 import subprocess
-import random
+from random import choice
 import webbrowser
 import csv
 from speech_recognition import Recognizer, Microphone, UnknownValueError
@@ -121,45 +121,10 @@ def video_emotion():
 
 
 def random_line(fname):
-    lines = open(fname).read().splitlines()
-    return random.choice(lines)
-
-
-def message_history():
-    widget = QGroupBox("Message")
-    # Add the scrollbar
-    scroll = QScrollArea()
-    scroll.setWidget(widget)
-    scroll.setMinimumHeight(600)
-    scroll.setWidgetResizable(True)
-    # Box where we add the message present in the history file
-    message_history_box = QVBoxLayout()
-    # To know if the chatbot said the sentence or the user
-    count = 0
-    try:
-        history = open("data/history.txt", 'r')
-    except FileNotFoundError:
-        history = open("data/history.txt", "w+")
-    for line in history:
-        # Case where it's a user message
-        if count % 2 == 0:
-            # The emotion is the last word of the line
-            # doc.setHtml(user_input(line).text())
-            # user_text = wrap_text(doc.toPlainText())
-            user_text = wrap_text(line)
-            message_history_box.addWidget(BubbleWidget(user_text, left=False))
-        # Chatbot message
-        else:
-            # doc.setHtml(chatbot_input(line).text())
-            bot_text = wrap_text(line)
-            message_history_box.addWidget(BubbleWidget(bot_text, left=True, user=False))
-        count = count + 1
-    history.close()
-
-    # Add the messages to the box
-    widget.setLayout(message_history_box)
-    # Return the scrollbar and the verticalbox in order to update it
-    return scroll, message_history_box
+    file = open(fname)
+    result = choice(file.read().splitlines())
+    file.close()
+    return result
 
 
 # Open the window in order to select the files
@@ -203,9 +168,9 @@ def add_new_message(message, box, blender_bot):
         # Add the new elements to the history file.
         # TODO: Improve this function so we're not opening the file every time
         history = open("data/history.txt", "a")
-        user_text = user_text.replace('\n', ' ')
         bot_text = bot_text.replace('\n', ' ')
         history.write(message.text() + "\n" + bot_text + "\n")
+        history.close()
         # Store the answer if it's a relevant information about the user
         # Empty the message area
         message.setText("")
@@ -295,7 +260,7 @@ class UserInterface(QMainWindow):
         self.setCentralWidget(self.central_widget)
         # Initialise the blender bot
         self.blender_bot = create_agent_and_persona()
-        self.blender_bot.last_message = ""
+        self.blender_bot.last_message = greetings()
         self.blender_bot.embedder = SentenceTransformer('roberta-base-nli-stsb-mean-tokens')
         self.blender_bot.memory = self.add_memory()
         self.title = "Healthcare Chatbot"
@@ -382,7 +347,7 @@ class UserInterface(QMainWindow):
         # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
         grid = QGridLayout(self)
         # Add the message history
-        scroll_area, message_history_box = message_history()
+        scroll_area, message_history_box = self.message_history()
         grid.addWidget(scroll_area)
 
         new_messages_box, emotion_box = messages(message_history_box, self.blender_bot)
@@ -416,6 +381,46 @@ class UserInterface(QMainWindow):
             questions_embedding = self.blender_bot.embedder.encode(question, convert_to_tensor=True)
         return questions_embedding, answer
 
+    def message_history(self):
+        widget = QGroupBox("Message")
+        # Add the scrollbar
+        scroll = QScrollArea()
+        scroll.setWidget(widget)
+        scroll.setMinimumHeight(600)
+        scroll.setWidgetResizable(True)
+        # Box where we add the message present in the history file
+        message_history_box = QVBoxLayout()
+        # To know if the chatbot said the sentence or the user
+        count = 0
+        try:
+            history = open("data/history.txt", 'r')
+        except FileNotFoundError:
+            history = open("data/history.txt", "w+")
+        for line in history:
+            # Case where it's a user message
+            if count % 2 == 0:
+                # The emotion is the last word of the line
+                user_text = wrap_text(line)
+                message_history_box.addWidget(BubbleWidget(user_text, left=False))
+            # Chatbot message
+            else:
+                # doc.setHtml(chatbot_input(line).text())
+                bot_text = wrap_text(line)
+                message_history_box.addWidget(BubbleWidget(bot_text, left=True, user=False))
+            count = count + 1
+        history.close()
+        # Add the greetings
+        print(self.blender_bot.last_message)
+        self.blender_bot.observe({'text': '', "episode_done": False})
+        self.blender_bot.self_observe({'text': self.blender_bot.last_message, "episode_done": False})
+        message_history_box.addWidget(BubbleWidget(self.blender_bot.last_message, left=True, user=False))
+        history = open("data/history.txt", "a")
+        history.write(self.blender_bot.last_message + '\n')
+        history.close()
+        # Add the messages to the box
+        widget.setLayout(message_history_box)
+        # Return the scrollbar and the verticalbox in order to update it
+        return scroll, message_history_box
 
 # TODO: add persona
 if __name__ == '__main__':

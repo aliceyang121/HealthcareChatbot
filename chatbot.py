@@ -2,6 +2,8 @@ from parlai.core.agents import create_agent_from_model_file
 from sentence_transformers import util
 import csv
 from random import random, choice
+from datetime import datetime
+import calendar
 
 
 # Select the question part of the bot input
@@ -16,7 +18,7 @@ def extract_question(input):
         input = input[2]
         input = input.partition('.')
     input = input[0]
-    # Change to get a question ask by the user
+    # Change to get a question adécès à lsk by the user
     input = input.replace('your ', 'my ')
     input = input.replace('are you ', 'am I ')
     input = input.replace('you ', 'I ')
@@ -111,3 +113,33 @@ def create_agent_and_persona(persona=''):
     blender_agent = create_agent_from_model_file("zoo:blender/blender_90M/model")
     blender_agent.observe({'text': persona})
     return blender_agent
+
+
+def greetings():
+    date = datetime.now()
+    # Case where we answer with the day of the week
+    rand = random()
+    if rand < 0.45:
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        weekday = calendar.weekday(date.year, date.month, date.day)
+        if weekday < 4:
+            result = 'Hi! How are you feeling this ' + days[weekday] + '?'
+        elif weekday == 4:
+            result = 'Happy Friday! Do you have any plan for this weekend :) ?'
+        else:
+            result = "Hi friend, how is your weekend going?"
+    elif 0.45 <= rand < 0.9:
+        if date.hour < 7 or date.hour > 18:
+            result = 'Hey, how is your night going?'
+        elif date.hour < 12:
+            result = "Hi! How are you feeling this morning?"
+        else:
+            result = "Good afternoon! How was your morning?"
+    else:
+        sentence = ['Hi, how are you doing?', 'Hey, how are you feeling today?', 'Hi there! How is your day going?',
+                    'Nice to see you! How are you?', "Hi! Wish you're having a great day!"]
+        result = choice(sentence)
+    return result
+
+if __name__ == '__main__':
+    print(greetings())
