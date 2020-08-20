@@ -32,7 +32,10 @@ def extract_answer(input):
     partition = input.partition('!')
     input = partition[0] + partition[1]
     # Change to get an answer describing the user
-    input = input.replace('my ', 'Your ')
+    return input
+
+def swap_time_answer(input):
+    input = input.replace('my ', 'your ')
     input = input.replace('am I ', 'are you ')
     input = input.replace('I ', 'you ')
     return input
@@ -41,14 +44,17 @@ def extract_answer(input):
 # Add the user input and the question if necessary
 def analyse_store_answer(user_input, bot_input):
     # We store if the sentence start by I'm or I+something and if the bot was asking a question
-    if '?' in bot_input and user_input[0] == 'I' and len(user_input) > 5:
-        if user_input[1:4] == "'m " or user_input[1] == ' ':
-            # Extract the question in the bot input
-            bot_input = extract_question(bot_input)
+    if '?' in bot_input and user_input[0] == 'I' and len(user_input) > 5 and (user_input[1:4] == "'m " or user_input[1] == ' '):
+        # Extract the question in the bot input
+        bot_input = extract_question(bot_input)
+        answer = extract_answer(user_input)
+        if not ("your " in answer or 'are you ' in answer or "you " in answer or "you?" in answer or "what about I ?" in
+                bot_input or "how about I ?" in bot_input):
+            answer = swap_time_answer(answer)
             # Save the question and the answer
             file_user_facts = open("data/user_facts.csv", 'a')
             writer = csv.writer(file_user_facts, delimiter=';')
-            writer.writerow([bot_input.replace('\n', " "), extract_answer(user_input)])
+            writer.writerow([bot_input.replace('\n', " "), answer])
             file_user_facts.close()
 
 
@@ -65,13 +71,14 @@ def max_index(list_value):
     return maximum, index
 
 
-def add_generic_question(bot_input):
-    if '?' not in bot_input:
+def add_generic_question(bot_input, blender_bot):
+    if '?' not in bot_input['text']:
         threshold = 0.8
-        rdm = random()
-        if rdm > threshold:
+        if random() > threshold:
             file = open("data/generic_questions.txt")
-            bot_input = bot_input + choice(file.read().splitlines())
+            question_add = choice(file.read().splitlines())
+            bot_input.force_set('text', bot_input['text'] + question_add)
+            blender_bot.self_observe({'text': question_add})
             file.close()
     return bot_input
 
@@ -81,20 +88,21 @@ def next_answer(blender_agent, user_input, boolean_finish=False):
     blender_agent.observe({'text': user_input, "episode_done": boolean_finish})
     # Extract the memory
     questions_embedding, answer = blender_agent.memory
-    # Convert the user_input to a tensor
-    query_embedding = blender_agent.embedder.encode(user_input, convert_to_tensor=True)
-    try:
+    if questions_embedding is not None:
+        # Convert the user_input to a tensor
+        query_embedding = blender_agent.embedder.encode(user_input, convert_to_tensor=True)
         # Find the closest sentence in the facts compared to the user input
         cos_scores = util.pytorch_cos_sim(query_embedding, questions_embedding)[0]
         top_result, index = max_index(cos_scores)
-    except RuntimeError:
+    else:
         top_result = 0
     # If the user is asking a question close to the one in the stored question we respond with the appropriate answer
-    if top_result > 0.65:
+    if top_result > 0.75:
         response = blender_agent.act(answer[index], from_db=True)
     # Else we use the blender_agent answer
     else:
         response = blender_agent.act()
+        response = add_generic_question(response, blender_agent)
     return response['text']
 
 

@@ -410,7 +410,10 @@ class UserInterface(QMainWindow):
         # Close the file
         user_facts.close()
         # Convert the facts to tensors
-        questions_embedding = self.blender_bot.embedder.encode(question, convert_to_tensor=True)
+        if len(question) == 0:
+            questions_embedding = None
+        else:
+            questions_embedding = self.blender_bot.embedder.encode(question, convert_to_tensor=True)
         return questions_embedding, answer
 
 
