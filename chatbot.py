@@ -109,10 +109,11 @@ def next_answer(blender_agent, user_input, boolean_finish=False):
 
 
 # Create the agent and return it
-def create_agent_and_persona(persona=''):
-    blender_agent = create_agent_from_model_file("zoo:blender/blender_90M/model")
-    blender_agent.observe({'text': persona})
-    return blender_agent
+def create_agent_and_persona(personas=''):
+    blender_bot = create_agent_from_model_file("zoo:blender/blender_90M/model")
+    for persona in personas:
+        blender_bot.observe({'text': persona})
+    return blender_bot
 
 
 def greetings():

@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QLabel, QFrame,
                              QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QFileDialog, QScrollArea,
-                             QMainWindow, QMessageBox, QAction, QSpacerItem, QSizePolicy)
+                             QMainWindow, QMessageBox, QAction, QSpacerItem, QSizePolicy, QDialog)
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QColor
 from sentence_transformers import SentenceTransformer
 
@@ -95,6 +95,7 @@ def show_emotion_and_music(text, label):
         label.setText(emotion + "\nSong Recommendation: " + music_name)
         webbrowser.open_new(music_link)
 
+
 def determine_overall_emotion():
     history = open("data/history.csv", 'r')
     history_reader = csv.reader(history, delimiter=';')
@@ -120,9 +121,10 @@ def determine_overall_emotion():
     else:
         return video_emotion()
 
+
 def video_emotion():
     # TODO: implement the model for detecting emotion from video
-    return "fear", "NA"   # placeholder for now
+    return "fear", "NA"  # placeholder for now
 
 
 def random_line(fname):
@@ -260,16 +262,50 @@ def new_message_on_bottom():
     return frame
 
 
+def persona():
+    try:
+        file = open("data/persona.txt")
+        result = file.read().splitlines()
+        file.close()
+    except FileNotFoundError:
+        result = []
+    return result
+
+
+def persona_qline_edit(lines, number_persona, index):
+    if number_persona >= index:
+        return QLineEdit(lines[index - 1])
+    else:
+        return QLineEdit()
+
+
+def add_your_persona(personas):
+    result = []
+    for line in personas:
+        if line != '':
+            result.append('Your persona! ' + line)
+    return result
+
+
+def set_personas(popup, persona1, persona2, persona3, persona4, persona5):
+    file = open("data/persona.txt", 'w')
+    file.write(persona1 + "\n" + persona2 + "\n" + persona3 + "\n" + persona4 + "\n" + persona5 + "\n")
+    file.close()
+    popup.close()
+
+
 class UserInterface(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         # Initialise the blender bot
-        self.blender_bot = create_agent_and_persona()
+        personas = persona()
+        self.blender_bot = create_agent_and_persona(add_your_persona(personas))
         self.blender_bot.last_message = greetings()
         self.blender_bot.embedder = SentenceTransformer('roberta-base-nli-stsb-mean-tokens')
         self.blender_bot.memory = self.add_memory()
+        self.blender_bot.persona = personas
         self.title = "Healthcare Chatbot"
         self.setWindowTitle("Healthcare Chatbot")
         # Set the size of the window
@@ -282,39 +318,31 @@ class UserInterface(QMainWindow):
     # Change the persona
     def change_persona(self):
         # TODO: Set the persona and store it
-        # popup = QDialog()
-        # vertical_box = QVBoxLayout()
-        # popup.setMinimumSize(500, 500)
-        # popup.setWindowTitle("Change persona")
-        # persona1 = QLineEdit('Sentence for the persona')
-        # persona2 = QLineEdit('Sentence for the persona')
-        # persona3 = QLineEdit('Sentence for the persona')
-        # persona4 = QLineEdit('Sentence for the persona')
-        # persona5 = QLineEdit('Sentence for the persona')
-        # button_ok = QPushButton("ok")
-        # vertical_box.addWidget(persona1)
-        # vertical_box.addWidget(persona2)
-        # vertical_box.addWidget(persona3)
-        # vertical_box.addWidget(persona4)
-        # vertical_box.addWidget(persona5)
-        # vertical_box.addWidget(button_ok)
-        # popup.setLayout(vertical_box)
-        # popup.exec()
-
-        alert = QMessageBox()
-        # Add text, warning icon and title
-        alert.setText("Are you sure you want to change the chatbot's persona?\n"
-                      "This action may take some time")
-        alert.setWindowTitle("Warning")
-        alert.setIcon(QMessageBox.Warning)
-        # Add the buttons to the message box
-        alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        retval = alert.exec()
-        if retval == 1024:
-            self.blender_bot.reset()
-            print("Persona reset")
-
-        # Reset the chatbot and empty the history
+        popup = QDialog()
+        vertical_box = QVBoxLayout()
+        popup.setMinimumSize(300, 300)
+        popup.setWindowTitle("Change persona")
+        number_persona = len(self.blender_bot.persona)
+        persona1 = persona_qline_edit(self.blender_bot.persona, number_persona, 1)
+        persona2 = persona_qline_edit(self.blender_bot.persona, number_persona, 2)
+        persona3 = persona_qline_edit(self.blender_bot.persona, number_persona, 3)
+        persona4 = persona_qline_edit(self.blender_bot.persona, number_persona, 4)
+        persona5 = persona_qline_edit(self.blender_bot.persona, number_persona, 5)
+        button_set = QPushButton("Set persona", popup)
+        button_set.clicked.connect(lambda: set_personas(popup, persona1.text(), persona2.text(), persona3.text(),
+                                                        persona4.text(), persona5.text()))
+        vertical_box.addWidget(QLabel("Set the persona of the chatbot.\n "
+                                      "If you change it, the new persona will be create after restarting the "
+                                      "application. "
+                                      "\n\nExample of persona: \n My name is John \n"))
+        vertical_box.addWidget(persona1)
+        vertical_box.addWidget(persona2)
+        vertical_box.addWidget(persona3)
+        vertical_box.addWidget(persona4)
+        vertical_box.addWidget(persona5)
+        vertical_box.addWidget(button_set)
+        popup.setLayout(vertical_box)
+        popup.exec()
 
     def reset_chatbot(self):
         # Create the message box
@@ -433,6 +461,7 @@ class UserInterface(QMainWindow):
         widget.setLayout(message_history_box)
         # Return the scrollbar and the verticalbox in order to update it
         return scroll, message_history_box
+
 
 # TODO: add persona
 if __name__ == '__main__':
