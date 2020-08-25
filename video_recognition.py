@@ -15,25 +15,8 @@ import os
 
 # Record a video during around 5 seconds
 def record_video():
-    dilation = 6
-    _range = range(9 + dilation, 9 + dilation * (8 + 1), dilation)
-    indexes = []
-    for i, index in enumerate(_range):
-        indexes.append(index)
     cap = cv2.VideoCapture(0)
     count = 0
-    iterator = 0
-    # TODO: select the image if a face is visible
-    while count < 8:
-        ret, frame = cap.read()
-        if iterator in indexes:
-            cv2.imwrite(os.path.join("data/frames/input_frames/", str(count) + ".jpg"), frame)
-            count = count + 1
-        iterator = iterator + 1
-    cap.release()
-
-
-def detect_face(input_path):
     return_layers = {'layer2': 1, 'layer3': 2, 'layer4': 3}
     RetinaFace = torchvision_model.create_retinaface(return_layers)
     retina_dict = RetinaFace.state_dict()
@@ -42,15 +25,25 @@ def detect_face(input_path):
     pretrained_dict = {k[7:]: v for k, v in pre_state_dict.items() if k[7:] in retina_dict}
 
     RetinaFace.load_state_dict(pretrained_dict)
-    for img_name in os.listdir(input_path):
-        RetinaFace.eval()
-        img = skimage.io.imread(os.path.join(input_path, img_name))
-        img = torch.from_numpy(img)
-        img = img.permute(2, 0, 1)
+    RetinaFace.eval()
+    while count < 8:
+        _, frame = cap.read()
+        cv2.imwrite(os.path.join("data/frames/input_frames/", str(count) + ".jpg"), frame)
+        while not detect_face_one_image("data/frames/input_frames/" + str(count) + ".jpg", RetinaFace):
+            _, frame = cap.read()
+            cv2.imwrite(os.path.join("data/frames/input_frames/", str(count) + ".jpg"), frame)
+            detect_face_one_image("data/frames/input_frames/" + str(count) + ".jpg", RetinaFace)
+        count = count + 1
+    cap.release()
 
-        input_img = img.unsqueeze(0).float()
-        picked_boxes, picked_landmarks, _ = eval_widerface.get_detections(input_img, RetinaFace)
 
+def detect_face_one_image(img_name, RetinaFace):
+    img = skimage.io.imread(img_name)
+    img = torch.from_numpy(img)
+    img = img.permute(2, 0, 1)
+    input_img = img.unsqueeze(0).float()
+    picked_boxes, picked_landmarks, _ = eval_widerface.get_detections(input_img, RetinaFace)
+    try:
         box = list(map(lambda x: int(x), picked_boxes[0][0]))
 
         h = box[3] - box[1]
@@ -59,9 +52,10 @@ def detect_face(input_path):
         img = img[box[1]:box[1] + h, box[0]:box[0] + w]
         if not img.shape[0] < 112:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            cropped_face_output_dir = "data/frames/faces"
-            save_path = os.path.join(cropped_face_output_dir, img_name)
-            cv2.imwrite(save_path, img)
+            cv2.imwrite(img_name, img)
+        return True
+    except TypeError:
+        return False
 
 
 def predict(image):
@@ -138,7 +132,6 @@ def _get_rotation_matrix1(left_eye_pt, right_eye_pt, left_outer_mouth_points, ri
     '''
     eye_angle = _angle_between_2_pt(left_eye_pt, right_eye_pt)
     M = cv2.getRotationMatrix2D((nose_center[0] / 2, nose_center[1] / 2), eye_angle, scale)
-
     return M
 
 
@@ -172,7 +165,7 @@ def draw_mask(points, imp):
 def analyse_images(images):
     aligned_faces_dir = "data/frames/aligned_faces"
     mask_dir = "data/frames/masks"
-    cropped_face_output_dir = "data/frames/faces/"
+    cropped_face_output_dir = "data/frames/input_frames/"
     for image_name in images:
         img = imread(cropped_face_output_dir + image_name)
         img = cv2.resize(img, (112, 112), interpolation=cv2.INTER_CUBIC)
@@ -196,7 +189,6 @@ def analyse_images(images):
         mask = draw_mask(kpt, black_frame)
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
         cv2.imwrite(os.path.join(mask_dir, image_name), mask, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-
 
 
 def ex_to_str(arr):
@@ -322,8 +314,7 @@ def extract_emotion(data):
 
 def video_emotion_recognition():
     record_video()
-    detect_face("data/frames/input_frames/")
-    analyse_images(os.listdir('data/frames/faces'))
+    analyse_images(os.listdir('data/frames/input_frames/'))
     extract_emotion(return_data())
 
 
