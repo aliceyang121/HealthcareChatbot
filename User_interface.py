@@ -11,8 +11,9 @@ import subprocess
 from random import choice
 import webbrowser
 import csv
-import pandas as pd
+# import pandas as pd
 from speech_recognition import Recognizer, Microphone, UnknownValueError
+# from video_recognition import video_emotion_recognition
 
 
 # Creates QLabel for texts
@@ -123,8 +124,7 @@ def determine_overall_emotion():
 
 
 def video_emotion():
-    # TODO: implement the model for detecting emotion from video
-    return "fear", "NA"  # placeholder for now
+    return video_emotion_recognition()
 
 
 def random_line(fname):

@@ -3,7 +3,7 @@ try:
 except ImportError:
     from transformers.modeling_bert import BertModel
 import torch
-import tensorflow as tf
+# import tensorflow as tf
 from torch import nn
 import pandas as pd
 
