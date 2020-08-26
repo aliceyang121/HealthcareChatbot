@@ -106,7 +106,7 @@ def determine_overall_emotion():
     for line in reversed(list(history_reader)):
         if ctr == 3:  # only look at the last 3 text exchanges
             break
-        elif (line[0] == 'U'):
+        elif line[0] == 'U':
             emotion, probability = detect_emotion(line[1])
             emotions.append(emotion)
             probabilities.append(probability)
@@ -120,11 +120,8 @@ def determine_overall_emotion():
         return emotions[0], lowest_probability
 
     else:
-        return video_emotion()
-
-
-def video_emotion():
-    return video_emotion_recognition()
+        # return video_emotion_recognition()
+        pass
 
 
 def random_line(fname):

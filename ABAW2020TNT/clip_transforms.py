@@ -4,12 +4,10 @@ Code from
 Felix Kuhnke and Lars Rumberg and Joern Ostermann
 Please see https://github.com/kuhnkeF/ABAW2020TNT
 """
-import torch
-from torchvision.transforms.functional import normalize
-import numpy as np
-import cv2
+from torch import as_tensor, uint8, from_numpy
+from numpy import float32
+from cv2 import flip
 import random
-import importlib
 from torchaudio.transforms import AmplitudeToDB
 
 
@@ -38,11 +36,11 @@ class NumpyToTensor:
         if invert:
             #convert to TODO
             clip = clip.permute(1, 2, 3, 0)
-            clip = clip.mul(255).to(torch.uint8)
+            clip = clip.mul(255).to(uint8)
         else:
             #convert from img int8 T, W, H, C to float 0-1 image C T W H
-            clip = clip.astype(np.float32) / 255
-            clip = torch.from_numpy(clip).permute(3, 0, 1, 2)
+            clip = clip.astype(float32) / 255
+            clip = from_numpy(clip).permute(3, 0, 1, 2)
 
         return clip
 
@@ -66,11 +64,11 @@ class Normalize:
         if self.mean_t is None:
             dtype = clip.dtype
             if len(clip.shape) == 4:
-                self.mean_t = torch.as_tensor(self.mean, dtype=dtype, device=clip.device)[:, None, None, None]
-                self.std_t = torch.as_tensor(self.std, dtype=dtype, device=clip.device)[:, None, None, None]
+                self.mean_t = as_tensor(self.mean, dtype=dtype, device=clip.device)[:, None, None, None]
+                self.std_t = as_tensor(self.std, dtype=dtype, device=clip.device)[:, None, None, None]
             else:
-                self.mean_t = torch.as_tensor(self.mean, dtype=dtype, device=clip.device)[:, None, None]
-                self.std_t = torch.as_tensor(self.std, dtype=dtype, device=clip.device)[:, None, None]
+                self.mean_t = as_tensor(self.mean, dtype=dtype, device=clip.device)[:, None, None]
+                self.std_t = as_tensor(self.std, dtype=dtype, device=clip.device)[:, None, None]
 
         if invert:
             clip = clip.clone()
@@ -113,6 +111,6 @@ class RandomClipFlip:
                 #assert clip.shape[3] == 3 # last channel is RGB
                 # for every image apply cv2 flip
                 for i in range(clip.shape[0]):
-                    clip[i] = cv2.flip(clip[i], 1)
+                    clip[i] = flip(clip[i], 1)
 
         return clip
