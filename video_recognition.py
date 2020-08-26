@@ -310,13 +310,13 @@ def extract_emotion(data):
     label_array = round(label_array).astype(int)
     writer = ex_to_str
     ans = writer(label_array[0])
-    label_dict = {"0": "Neutral",
-                  "1": "Anger",
-                  "2": "Disgust",
-                  "3": "Fear",
-                  "4": "Happiness",
-                  "5": "Sadness",
-                  "6": "Surprise"}
+    label_dict = {"0": "neutral",
+                  "1": "anger",
+                  "2": "disgust",
+                  "3": "fear",
+                  "4": "joy",
+                  "5": "sadness",
+                  "6": "surprise"}
     print(label_dict[ans])
     return label_dict[ans]
 

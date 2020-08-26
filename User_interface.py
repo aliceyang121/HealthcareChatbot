@@ -82,13 +82,13 @@ def show_emotion_and_music(text, label):
     # If the user push ok, we reset
     if retval == 1024:
         # determine type of music
-        if emotion == "joy":
+        if emotion in ["joy", "surprise", "neutral"]:
             string = random_line('music/joy_music.txt').split(";")
         elif emotion == "fear":
             string = random_line('music/fear_music.txt').split(";")
         elif emotion == "sadness":
             string = random_line('music/sadness_music.txt').split(";")
-        else:
+        elif emotion in ["anger", "disgust"]:
             string = random_line('music/anger_music.txt').split(";")
 
         music_link = string[0]
