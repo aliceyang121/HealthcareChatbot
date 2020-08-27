@@ -68,6 +68,7 @@ class BubbleWidget(QWidget):
 
 def show_emotion_and_music(text, label):
     emotion, probability = determine_overall_emotion()
+    probability = str(probability)
     label.setText("Emotion: " + emotion + "\nProbability: " + probability)
 
     # Create the message box
@@ -90,6 +91,8 @@ def show_emotion_and_music(text, label):
             string = random_line('music/sadness_music.txt').split(";")
         elif emotion in ["anger", "disgust"]:
             string = random_line('music/anger_music.txt').split(";")
+        elif emotion == "NA":
+            pass
 
         music_link = string[0]
         music_name = string[1]
@@ -100,28 +103,21 @@ def show_emotion_and_music(text, label):
 def determine_overall_emotion():
     history = open("data/history.csv", 'r')
     history_reader = csv.reader(history, delimiter=';')
-    ctr = 0
-    emotions = []
-    probabilities = []
+    emotion = "NA"
+    probability = -1
     for line in reversed(list(history_reader)):
-        if ctr == 3:  # only look at the last 3 text exchanges
-            break
-        elif line[0] == 'U':
+        if line[0] == 'U':    # only look at the last text exchange by user
             emotion, probability = detect_emotion(line[1])
-            emotions.append(emotion)
-            probabilities.append(probability)
-            ctr += 1
+            # emotions.append(emotion)
+            # probabilities.append(probability)
+            break
 
-    # check to see if all emotions are the same
-    same_emotions = all(emo == emotions[0] for emo in emotions)
-
-    if same_emotions:
-        lowest_probability = str(min(probabilities))
-        return emotions[0], lowest_probability
+    if probability > 90:
+        return emotion, probability
 
     else:
         # return video_emotion_recognition()
-        pass
+        return "NA", probability
 
 
 def random_line(fname):
@@ -167,18 +163,12 @@ def add_new_message(message, box, blender_bot):
         # Add the bot input to the ui
         box.addWidget(BubbleWidget(bot_text, left=True, user=False))
         # Add the new elements to the history file.
-        # TODO: Improve this function so we're not opening the file every time
         bot_text = bot_text.replace('\n', ' ')
         history = open("data/history.csv", 'a')
         writer = csv.writer(history, delimiter=';')
         writer.writerow(['U', message.text()])
         writer.writerow(['C', bot_text])
         history.close()
-        # history_csv.append({'type': 'U', 'message': message.text()})
-        # history_df.append({'type': 'C', 'message': bot_text})
-        # history_df.to_csv("data/history.csv")
-        # Store the answer if it's a relevant information about the user
-        # Empty the message area
         message.setText("")
 
 
