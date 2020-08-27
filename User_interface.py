@@ -157,7 +157,7 @@ def add_new_message(message, box, blender_bot):
         # Add the user input to the ui
         box.addWidget(BubbleWidget(user_text, left=False))
         # Compute the bot input
-        analyse_store_answer(message.text(), blender_bot.last_message)
+        # analyse_store_answer(message.text(), blender_bot.last_message)
         bot_text = wrap_text(next_answer(blender_bot, message.text()))
         blender_bot.last_message = bot_text
         # Add the bot input to the ui
@@ -351,6 +351,35 @@ class UserInterface(QMainWindow):
             self.close()
             subprocess.call("python" + " User_interface.py", shell=True)
 
+    def save_info(self):
+        # Obtain last user input and chatbot question
+        history = open("data/history.csv", 'r')
+        history_reader = csv.reader(history, delimiter=';')
+        question = False
+        for line in reversed(list(history_reader)):
+            if line[0] == 'U':
+                user_info = line[1]
+                question = True
+            elif question:
+                question_info = line[1]
+                question = False
+                break
+
+        alert = QMessageBox()
+        # Add text, icon and title
+        alert.setText("Are you sure you want to save personal information: \n"
+                       "Question: {} \n Answer: {}".format(question_info, user_info))
+        alert.setWindowTitle("Save Personal Info")
+        alert.setIcon(QMessageBox.Information)
+        # Add the buttons to the message box
+        alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        retval = alert.exec()
+        # If the user push ok, we save personal info
+        if retval == 1024:
+            analyse_store_answer(user_info, question_info)
+
+
+
     # Add the menu with the change persona and reset chatbot buttons
     def set_menu(self):
         # Create the change persona option
@@ -359,11 +388,15 @@ class UserInterface(QMainWindow):
         # Create the reset chatbot option
         reset = QAction("Reset Chatbot", self)
         reset.triggered.connect(lambda: self.reset_chatbot())
+        # Create save personal information option
+        save = QAction("Save Information", self)
+        save.triggered.connect(lambda: self.save_info())
         # Create the menu and add the persona
         menu = self.menuBar()
         menu.setNativeMenuBar(False)
         menu.addAction(persona)
         menu.addAction(reset)
+        menu.addAction(save)
 
     def add_scrollbar_widgets(self):
         # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
