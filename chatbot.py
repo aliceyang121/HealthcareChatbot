@@ -44,20 +44,18 @@ def swap_time_answer(input):
 
 
 # Add the user input and the question if necessary
-def analyse_store_answer(user_input, bot_input):
+def analyse_store_answer(user_input, bot_input, popup):
     # We store if the sentence start by I'm or I+something and if the bot was asking a question
-    if '?' in bot_input and user_input[0] == 'I' and len(user_input) > 5 and (user_input[1:4] == "'m " or user_input[1] == ' '):
-        # Extract the question in the bot input
-        bot_input = extract_question(bot_input)
-        answer = extract_answer(user_input)
-        if not ("your " in answer or 'are you ' in answer or "you " in answer or "you?" in answer or "what about I ?" in
-                bot_input or "how about I ?" in bot_input):
-            answer = swap_time_answer(answer)
-            # Save the question and the answer
-            file_user_facts = open("data/user_facts.csv", 'a')
-            writer = csv.writer(file_user_facts, delimiter=';')
-            writer.writerow([bot_input.replace('\n', " "), answer])
-            file_user_facts.close()
+    if bot_input != '' or user_input != '':
+        answer = swap_time_answer(user_input)
+        # Save the question and the answer
+        file_user_facts = open("data/user_facts.csv", 'a')
+        writer = csv.writer(file_user_facts, delimiter=';')
+        writer.writerow([bot_input.replace('\n', " "), answer])
+        file_user_facts.close()
+        popup.close()
+    else:
+        popup.close
 
 
 # Search for the max of a list and return it with the index

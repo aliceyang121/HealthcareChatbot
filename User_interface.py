@@ -11,7 +11,6 @@ import subprocess
 from random import choice
 import webbrowser
 import csv
-# import pandas as pd
 from speech_recognition import Recognizer, Microphone, UnknownValueError
 # from video_recognition import video_emotion_recognition
 
@@ -157,7 +156,6 @@ def add_new_message(message, box, blender_bot):
         # Add the user input to the ui
         box.addWidget(BubbleWidget(user_text, left=False))
         # Compute the bot input
-        # analyse_store_answer(message.text(), blender_bot.last_message)
         bot_text = wrap_text(next_answer(blender_bot, message.text()))
         blender_bot.last_message = bot_text
         # Add the bot input to the ui
@@ -365,19 +363,26 @@ class UserInterface(QMainWindow):
                 question = False
                 break
 
-        alert = QMessageBox()
+        alert = QDialog()
+        alert.setMinimumSize(500, 200)
         # Add text, icon and title
-        alert.setText("Are you sure you want to save personal information: \n"
-                       "Question: {} \n Answer: {}".format(question_info, user_info))
-        alert.setWindowTitle("Save Personal Info")
-        alert.setIcon(QMessageBox.Information)
-        # Add the buttons to the message box
-        alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        retval = alert.exec()
-        # If the user push ok, we save personal info
-        if retval == 1024:
-            analyse_store_answer(user_info, question_info)
+        vertical_box = QVBoxLayout()
+        question_field = QLineEdit(question_info)
+        answer_field = QLineEdit(user_info)
 
+        vertical_box.addWidget(QLabel('Question: '))
+        vertical_box.addWidget(question_field)
+        vertical_box.addWidget(QLabel('Question: '))
+        vertical_box.addWidget(answer_field)
+        alert.setWindowTitle("Save Personal Info")
+        # alert.setIcon(QMessageBox.Information)
+        # Add the buttons to the message box
+        # alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        button_set = QPushButton("Set persona", alert)
+        vertical_box.addWidget(button_set)
+        button_set.clicked.connect(lambda: analyse_store_answer(answer_field.text(), question_field.text(), alert))
+        alert.setLayout(vertical_box)
+        alert.exec()
 
 
     # Add the menu with the change persona and reset chatbot buttons
@@ -401,14 +406,6 @@ class UserInterface(QMainWindow):
     def add_scrollbar_widgets(self):
         # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
         grid = QGridLayout(self)
-
-        # Open chat history
-        try:
-            history = open("data/history.csv", 'a')
-            history_reader = csv.reader(history, delimiter=';')
-        except FileNotFoundError:
-            history = open("data/history.csv", "w+")
-
         # Add the message history
         scroll_area, message_history_box = self.message_history()
         grid.addWidget(scroll_area)
