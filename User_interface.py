@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QL
                              QMainWindow, QMessageBox, QAction, QSpacerItem, QSizePolicy, QDialog)
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QColor
 from sentence_transformers import SentenceTransformer
-#from facial_emotion_recognition import EmotionRecognition
+from facial_emotion_recognition import EmotionRecognition
 from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer, greetings
 import subprocess
@@ -12,10 +12,14 @@ from random import choice
 import webbrowser
 import csv
 from speech_recognition import Recognizer, Microphone, UnknownValueError
-# from cv2 import VideoCapture, destroyAllWindows
+from cv2 import VideoCapture, destroyAllWindows
 from time import time
 from numpy import max
-
+# Audio modules
+import os
+import speech_recognition as sr
+from gtts import gTTS
+import playsound
 
 # Creates QLabel for texts
 class Bubble(QLabel):
@@ -66,6 +70,78 @@ class BubbleWidget(QWidget):
         self.setLayout(hbox)
         self.setContentsMargins(0, 0, 0, 0)
 
+num = 1
+def chatbot_speaks(output):
+    global num
+
+    # num to rename every audio file
+    # with different name to remove ambiguity
+    num += 1
+    print("Person: ", output)
+
+    toSpeak = gTTS(text = output, lang ='en', slow = False)
+    # saving the audio file given by google text to speech
+    file = str(num)+".mp3"
+    toSpeak.save(file)
+
+    # playsound package is used to play the same file.
+    playsound.playsound(file, True)
+    os.remove(file)
+
+def get_audio():
+    rObject = sr.Recognizer()
+    audio = ''
+    with sr.Microphone() as source:
+        print("Speak...")
+
+        # recording the audio using speech recognition
+        audio = rObject.listen(source, phrase_time_limit = 5)
+    print("Stop.") # limit 5 secs
+    try:
+        text = rObject.recognize_google(audio, language ='en-US')
+        print("You: ", text)
+        return text
+    except:
+        chatbot_speaks("Could not understand your audio, Please try again !")
+        return 0
+
+def chatting(box, blender_bot):
+    while(1):
+        user_text = get_audio().lower()
+        bot_text = process_audio(user_text, box, blender_bot)
+
+        # End call
+        if "exit" in str(user_text) or "bye" in str(user_text):
+            chatbot_speaks("Ok, ending voice call. Talk to you next time!")
+            break
+
+        chatbot_speaks(bot_text)
+
+        # if user message not understood
+        if user_text == 0:
+            continue
+    # Shows call
+    box.addWidget(BubbleWidget("You and the chatbot had a voicecall.", left=True, user=False))
+
+def process_audio(message, box, blender_bot):
+    # Add the message to the box only if there's a message
+    if len(message) > 0:
+        user_text = wrap_text(message)
+        # Add the user input to the ui
+        # box.addWidget(BubbleWidget(user_text, left=False))
+        # Compute the bot input
+        bot_text = wrap_text(next_answer(blender_bot, message))
+        blender_bot.last_message = bot_text
+        # Add the bot input to the ui
+        # box.addWidget(BubbleWidget(bot_text, left=True, user=False))
+        # Add the new elements to the history file.
+        bot_text = bot_text.replace('\n', ' ')
+        history = open("data/history.csv", 'a')
+        writer = csv.writer(history, delimiter=';')
+        writer.writerow(['U', message])
+        writer.writerow(['C', bot_text])
+        history.close()
+        return bot_text
 
 def emotion_from_image():
     # Initialise the model
@@ -188,6 +264,7 @@ def add_new_message(message, box, blender_bot):
         writer.writerow(['C', bot_text])
         history.close()
         message.setText("")
+        return bot_text
 
 
 # Extract audio from the microphone and convert it to text
@@ -248,7 +325,8 @@ def messages(message_history_box, blender_bot):
     # Permit to record the user voice and transform it into text for the QLineEdti
     audio_button = QPushButton()
     audio_button.setIcon(QIcon('Images/audio.png'))
-    audio_button.clicked.connect(lambda: audio_to_text(new_message_input))
+    # audio_button.clicked.connect(lambda: audio_to_text(new_message_input))
+    audio_button.clicked.connect(lambda: chatting(message_history_box, blender_bot))
     new_messages_box.addWidget(audio_button)
 
     group_box.setLayout(new_messages_box)
