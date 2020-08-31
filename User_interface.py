@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QLineEdit, QL
                              QMainWindow, QMessageBox, QAction, QSpacerItem, QSizePolicy, QDialog)
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QColor
 from sentence_transformers import SentenceTransformer
-
+#from facial_emotion_recognition import EmotionRecognition
 from emotion_recognition import detect_emotion
 from chatbot import create_agent_and_persona, next_answer, analyse_store_answer, greetings
 import subprocess
@@ -12,7 +12,9 @@ from random import choice
 import webbrowser
 import csv
 from speech_recognition import Recognizer, Microphone, UnknownValueError
-# from video_recognition import video_emotion_recognition
+# from cv2 import VideoCapture, destroyAllWindows
+from time import time
+from numpy import max
 
 
 # Creates QLabel for texts
@@ -65,6 +67,24 @@ class BubbleWidget(QWidget):
         self.setContentsMargins(0, 0, 0, 0)
 
 
+def emotion_from_image():
+    # Initialise the model
+    er = EmotionRecognition(device='gpu', gpu_id=0)
+    # Start the camera
+    cam = VideoCapture(0)
+    success, frame = cam.read()
+    # Extract the emotion and the proba
+    emotion, proba = er.recognise_emotion(frame, return_type='BGR')
+    initial_time = time()
+    # Try to capture an emotion during 5 senconds, if no faces are detected, we return None
+    while emotion is None and time() - initial_time < 5:
+        success, frame = cam.read()
+        emotion, proba = er.recognise_emotion(frame, return_type='BGR')
+    cam.release()
+    destroyAllWindows()
+    return emotion, max(proba)
+
+
 def show_emotion_and_music(text, label):
     emotion, probability = determine_overall_emotion()
     probability = str(probability)
@@ -105,7 +125,7 @@ def determine_overall_emotion():
     emotion = "NA"
     probability = -1
     for line in reversed(list(history_reader)):
-        if line[0] == 'U':    # only look at the last text exchange by user
+        if line[0] == 'U':  # only look at the last text exchange by user
             emotion, probability = detect_emotion(line[1])
             # emotions.append(emotion)
             # probabilities.append(probability)
@@ -115,8 +135,8 @@ def determine_overall_emotion():
         return emotion, probability
 
     else:
-        # return video_emotion_recognition()
-        return "NA", probability
+        # TODO: This return (emotion, proba) but proba is not a proba, need to change facial_emotion_recognition.py
+        return emotion_from_image()
 
 
 def random_line(fname):
@@ -225,6 +245,7 @@ def messages(message_history_box, blender_bot):
     import_file.clicked.connect(lambda: getfile(import_file, message_history_box))
     new_messages_box.addWidget(import_file)
 
+    # Permit to record the user voice and transform it into text for the QLineEdti
     audio_button = QPushButton()
     audio_button.setIcon(QIcon('Images/audio.png'))
     audio_button.clicked.connect(lambda: audio_to_text(new_message_input))
@@ -247,6 +268,7 @@ def new_message_on_bottom():
     return frame
 
 
+# Return a list of the persona stored in data/persona.txt
 def persona():
     try:
         file = open("data/persona.txt")
@@ -257,6 +279,7 @@ def persona():
     return result
 
 
+# Create a qlineedit in order to set the personas
 def persona_qline_edit(lines, number_persona, index):
     if number_persona >= index:
         return QLineEdit(lines[index - 1])
@@ -264,6 +287,7 @@ def persona_qline_edit(lines, number_persona, index):
         return QLineEdit()
 
 
+# Add 'your persona' at the beginning of each persona sentence
 def add_your_persona(personas):
     result = []
     for line in personas:
@@ -272,6 +296,7 @@ def add_your_persona(personas):
     return result
 
 
+# Store the persona file with the new persona
 def set_personas(popup, persona1, persona2, persona3, persona4, persona5):
     file = open("data/persona.txt", 'w')
     file.write(persona1 + "\n" + persona2 + "\n" + persona3 + "\n" + persona4 + "\n" + persona5 + "\n")
@@ -279,55 +304,40 @@ def set_personas(popup, persona1, persona2, persona3, persona4, persona5):
     popup.close()
 
 
-def change_user_facts(popup, box):
-    questions = []
-    answers = []
-    for i in range(box.count()):
-        if i % 4 == 1:
-            questions.append(box.itemAt(i))
-        elif i % 4 == 2:
-            answers.append(box.itemAt(i))
-
-    user_facts = open('data/user_facts.csv', 'w')
-    writer = csv.writer(user_facts, delimiter=';')
-    length = len(questions)
-    for i in range(length):
-        if questions[i].widget().text() != '' and answers[i].widget().text() != '':
-            writer.writerow([questions[i].widget().text(), answers[i].widget().text()])
-    user_facts.close()
-    popup.close()
-
-
-def change_saved_information():
-    popup = QDialog()
+# Save the last message
+def save_info():
+    # Obtain last user input and chatbot question
+    history = open("data/history.csv", 'r')
+    history_reader = csv.reader(history, delimiter=';')
+    question = False
+    for line in reversed(list(history_reader)):
+        if line[0] == 'U':
+            user_info = line[1]
+            question = True
+        elif question:
+            question_info = line[1]
+            question = False
+            break
+    # Open a popum
+    alert = QDialog()
+    alert.setMinimumSize(500, 200)
+    # Add text, icon and title
     vertical_box = QVBoxLayout()
-    popup.setMinimumSize(300, 300)
-    popup.setWindowTitle("Changing stored information")
-    try:
-        facts = open('data/user_facts.csv')
-        reader = csv.reader(facts, delimiter=';')
-        i = 1
-        for row in reader:
-            question = row[0]
-            answer = row[1]
-            question_input = QLineEdit(question)
-            answer_input = QLineEdit(answer)
-            vertical_box.addWidget(QLabel("Question and answer " + str(i) + ":"))
-            vertical_box.addWidget(question_input)
-            vertical_box.addWidget(answer_input)
-            vertical_box.addWidget(QLabel('\n'))
-            i = i + 1
-        button_set = QPushButton("Change stored information", popup)
-        button_set.clicked.connect(lambda: change_user_facts(popup, vertical_box))
-        vertical_box.addWidget(button_set)
-    except FileNotFoundError:
-        user_facts = open("data/user_facts.csv", 'w')
-        vertical_box.addWidget(QLabel("You have not yet stored any information"))
-    # Close the file
-    facts.close()
-    popup.setLayout(vertical_box)
-    popup.exec()
-
+    # Add the question and the answer and make it editable
+    question_field = QLineEdit(question_info)
+    answer_field = QLineEdit(user_info)
+    vertical_box.addWidget(QLabel('Question: '))
+    vertical_box.addWidget(question_field)
+    vertical_box.addWidget(QLabel('Question: '))
+    vertical_box.addWidget(answer_field)
+    alert.setWindowTitle("Save Personal Info")
+    button_set = QPushButton("Set persona", alert)
+    vertical_box.addWidget(button_set)
+    # Store the question and the answer if they are valid, then close the popup
+    button_set.clicked.connect(lambda: analyse_store_answer(answer_field.text(), question_field.text(), alert))
+    alert.setLayout(vertical_box)
+    # Print the popup
+    alert.exec()
 
 
 class UserInterface(QMainWindow):
@@ -338,7 +348,9 @@ class UserInterface(QMainWindow):
         # Initialise the blender bot
         personas = persona()
         self.blender_bot = create_agent_and_persona(add_your_persona(personas))
+        # Send greetings
         self.blender_bot.last_message = greetings()
+        # The embedder for the memory
         self.blender_bot.embedder = SentenceTransformer('roberta-base-nli-stsb-mean-tokens')
         self.blender_bot.memory = self.add_memory()
         self.blender_bot.persona = personas
@@ -353,11 +365,13 @@ class UserInterface(QMainWindow):
 
     # Change the persona
     def change_persona(self):
+        # Open a popup
         popup = QDialog()
         vertical_box = QVBoxLayout()
         popup.setMinimumSize(300, 300)
         popup.setWindowTitle("Change persona")
         number_persona = len(self.blender_bot.persona)
+        # Generate Qlineedit and fill the text with the actual persona
         persona1 = persona_qline_edit(self.blender_bot.persona, number_persona, 1)
         persona2 = persona_qline_edit(self.blender_bot.persona, number_persona, 2)
         persona3 = persona_qline_edit(self.blender_bot.persona, number_persona, 3)
@@ -399,42 +413,6 @@ class UserInterface(QMainWindow):
             self.close()
             subprocess.call("python" + " User_interface.py", shell=True)
 
-    def save_info(self):
-        # Obtain last user input and chatbot question
-        history = open("data/history.csv", 'r')
-        history_reader = csv.reader(history, delimiter=';')
-        question = False
-        for line in reversed(list(history_reader)):
-            if line[0] == 'U':
-                user_info = line[1]
-                question = True
-            elif question:
-                question_info = line[1]
-                question = False
-                break
-
-        alert = QDialog()
-        alert.setMinimumSize(500, 200)
-        # Add text, icon and title
-        vertical_box = QVBoxLayout()
-        question_field = QLineEdit(question_info)
-        answer_field = QLineEdit(user_info)
-
-        vertical_box.addWidget(QLabel('Question: '))
-        vertical_box.addWidget(question_field)
-        vertical_box.addWidget(QLabel('Question: '))
-        vertical_box.addWidget(answer_field)
-        alert.setWindowTitle("Save Personal Info")
-        # alert.setIcon(QMessageBox.Information)
-        # Add the buttons to the message box
-        # alert.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        button_set = QPushButton("Set persona", alert)
-        vertical_box.addWidget(button_set)
-        button_set.clicked.connect(lambda: analyse_store_answer(answer_field.text(), question_field.text(), alert))
-        alert.setLayout(vertical_box)
-        alert.exec()
-
-
     # Add the menu with the change persona and reset chatbot buttons
     def set_menu(self):
         # Create the change persona option
@@ -445,10 +423,10 @@ class UserInterface(QMainWindow):
         reset.triggered.connect(lambda: self.reset_chatbot())
         # Create save personal information option
         save = QAction("Save Information", self)
-        save.triggered.connect(lambda: self.save_info())
+        save.triggered.connect(lambda: save_info())
 
         change_facts = QAction("Change personal information", self)
-        change_facts.triggered.connect(lambda: change_saved_information())
+        change_facts.triggered.connect(lambda: self.change_saved_information())
         # Create the menu and add the persona
         menu = self.menuBar()
         menu.setNativeMenuBar(False)
@@ -519,8 +497,7 @@ class UserInterface(QMainWindow):
                 bot_text = wrap_text(row[1])
                 message_history_box.addWidget(BubbleWidget(bot_text, left=True, user=False))
         history.close()
-        # Add the greetings
-        # print(self.blender_bot.last_message)
+        # Add the greetings to the chatbot memory
         self.blender_bot.observe({'text': '', "episode_done": False})
         self.blender_bot.self_observe({'text': self.blender_bot.last_message, "episode_done": False})
         message_history_box.addWidget(BubbleWidget(self.blender_bot.last_message, left=True, user=False))
@@ -533,8 +510,68 @@ class UserInterface(QMainWindow):
         # Return the scrollbar and the verticalbox in order to update it
         return scroll, message_history_box
 
+    # Store the user information changes and add them to the memory
+    def change_user_facts(self, popup, box):
+        questions = []
+        answers = []
+        for i in range(box.count()):
+            # The questions and answer are always at the same place in the box so we store them
+            if i % 4 == 1:
+                questions.append(box.itemAt(i))
+            elif i % 4 == 2:
+                answers.append(box.itemAt(i))
+        # Open the file
+        user_facts = open('data/user_facts.csv', 'w')
+        writer = csv.writer(user_facts, delimiter=';')
+        length = len(questions)
+        # Write the questions and answers if they are not empty
+        for i in range(length):
+            if questions[i].widget().text() != '' and answers[i].widget().text() != '':
+                writer.writerow([questions[i].widget().text(), answers[i].widget().text()])
+        # Close the file and the popup
+        user_facts.close()
+        popup.close()
+        # update the chatbot memory
+        self.blender_bot.memory = self.add_memory()
 
-# TODO: add persona
+    # Create the popup in order to change the saved information
+    def change_saved_information(self):
+        # Create popup and the box
+        popup = QDialog()
+        vertical_box = QVBoxLayout()
+        popup.setMinimumSize(300, 300)
+        popup.setWindowTitle("Changing stored information")
+        # Try to open the user facts file
+        try:
+            facts = open('data/user_facts.csv')
+            reader = csv.reader(facts, delimiter=';')
+            i = 1
+            # Add an editable field for each question and answer
+            for row in reader:
+                question = row[0]
+                answer = row[1]
+                question_input = QLineEdit(question)
+                answer_input = QLineEdit(answer)
+                vertical_box.addWidget(QLabel("Question and answer " + str(i) + ":"))
+                vertical_box.addWidget(question_input)
+                vertical_box.addWidget(answer_input)
+                vertical_box.addWidget(QLabel('\n'))
+                i = i + 1
+            # Button to store the changes
+            button_set = QPushButton("Change stored information", popup)
+            # Make the change
+            button_set.clicked.connect(lambda: self.change_user_facts(popup, vertical_box))
+            vertical_box.addWidget(button_set)
+        # If the file doesn't exist, we create it
+        except FileNotFoundError:
+            facts = open("data/user_facts.csv", 'w')
+            vertical_box.addWidget(QLabel("You have not yet stored any information"))
+        # Close the file
+        facts.close()
+        popup.setLayout(vertical_box)
+        popup.exec()
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     user_interface = UserInterface()

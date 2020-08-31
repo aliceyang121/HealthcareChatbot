@@ -1,0 +1,1 @@
+from .facial_emotion_recognition import EmotionRecognition
