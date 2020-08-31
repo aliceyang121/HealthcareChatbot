@@ -279,6 +279,57 @@ def set_personas(popup, persona1, persona2, persona3, persona4, persona5):
     popup.close()
 
 
+def change_user_facts(popup, box):
+    questions = []
+    answers = []
+    for i in range(box.count()):
+        if i % 4 == 1:
+            questions.append(box.itemAt(i))
+        elif i % 4 == 2:
+            answers.append(box.itemAt(i))
+
+    user_facts = open('data/user_facts.csv', 'w')
+    writer = csv.writer(user_facts, delimiter=';')
+    length = len(questions)
+    for i in range(length):
+        if questions[i].widget().text() != '' and answers[i].widget().text() != '':
+            writer.writerow([questions[i].widget().text(), answers[i].widget().text()])
+    user_facts.close()
+    popup.close()
+
+
+def change_saved_information():
+    popup = QDialog()
+    vertical_box = QVBoxLayout()
+    popup.setMinimumSize(300, 300)
+    popup.setWindowTitle("Changing stored information")
+    try:
+        facts = open('data/user_facts.csv')
+        reader = csv.reader(facts, delimiter=';')
+        i = 1
+        for row in reader:
+            question = row[0]
+            answer = row[1]
+            question_input = QLineEdit(question)
+            answer_input = QLineEdit(answer)
+            vertical_box.addWidget(QLabel("Question and answer " + str(i) + ":"))
+            vertical_box.addWidget(question_input)
+            vertical_box.addWidget(answer_input)
+            vertical_box.addWidget(QLabel('\n'))
+            i = i + 1
+        button_set = QPushButton("Change stored information", popup)
+        button_set.clicked.connect(lambda: change_user_facts(popup, vertical_box))
+        vertical_box.addWidget(button_set)
+    except FileNotFoundError:
+        user_facts = open("data/user_facts.csv", 'w')
+        vertical_box.addWidget(QLabel("You have not yet stored any information"))
+    # Close the file
+    facts.close()
+    popup.setLayout(vertical_box)
+    popup.exec()
+
+
+
 class UserInterface(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
@@ -302,7 +353,6 @@ class UserInterface(QMainWindow):
 
     # Change the persona
     def change_persona(self):
-        # TODO: Set the persona and store it
         popup = QDialog()
         vertical_box = QVBoxLayout()
         popup.setMinimumSize(300, 300)
@@ -396,12 +446,16 @@ class UserInterface(QMainWindow):
         # Create save personal information option
         save = QAction("Save Information", self)
         save.triggered.connect(lambda: self.save_info())
+
+        change_facts = QAction("Change personal information", self)
+        change_facts.triggered.connect(lambda: change_saved_information())
         # Create the menu and add the persona
         menu = self.menuBar()
         menu.setNativeMenuBar(False)
         menu.addAction(persona)
         menu.addAction(reset)
         menu.addAction(save)
+        menu.addAction(change_facts)
 
     def add_scrollbar_widgets(self):
         # Initialise grid and add the QGridLayout to the QWidget that is added to the QScrollArea
@@ -455,7 +509,7 @@ class UserInterface(QMainWindow):
         history_reader = csv.reader(history, delimiter=';')
         for row in history_reader:
             # Case where it's a user message
-            if (row[0] == 'U'):
+            if row[0] == 'U':
                 # The emotion is the last word of the line
                 user_text = wrap_text(row[1])
                 message_history_box.addWidget(BubbleWidget(user_text, left=False))
