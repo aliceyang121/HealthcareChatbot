@@ -17,9 +17,9 @@ from time import time
 from numpy import max
 # Audio modules
 import os
-import speech_recognition as sr
 from gtts import gTTS
 import playsound
+
 
 # Creates QLabel for texts
 class Bubble(QLabel):
@@ -70,7 +70,10 @@ class BubbleWidget(QWidget):
         self.setLayout(hbox)
         self.setContentsMargins(0, 0, 0, 0)
 
+
 num = 1
+
+
 def chatbot_speaks(output):
     global num
 
@@ -79,34 +82,36 @@ def chatbot_speaks(output):
     num += 1
     print("Person: ", output)
 
-    toSpeak = gTTS(text = output, lang ='en', slow = False)
+    toSpeak = gTTS(text=output, lang='en', slow=False)
     # saving the audio file given by google text to speech
-    file = str(num)+".mp3"
+    file = str(num) + ".mp3"
     toSpeak.save(file)
 
     # playsound package is used to play the same file.
     playsound.playsound(file, True)
     os.remove(file)
 
+
 def get_audio():
-    rObject = sr.Recognizer()
+    rObject = Recognizer()
     audio = ''
-    with sr.Microphone() as source:
+    with Microphone() as source:
         print("Speak...")
 
         # recording the audio using speech recognition
-        audio = rObject.listen(source, phrase_time_limit = 5)
-    print("Stop.") # limit 5 secs
+        audio = rObject.listen(source, phrase_time_limit=5)
+    print("Stop.")  # limit 5 secs
     try:
-        text = rObject.recognize_google(audio, language ='en-US')
+        text = rObject.recognize_google(audio, language='en-US')
         print("You: ", text)
         return text
     except:
         chatbot_speaks("Could not understand your audio, Please try again !")
         return 0
 
+
 def chatting(box, blender_bot):
-    while(1):
+    while 1:
         user_text = get_audio().lower()
         bot_text = process_audio(user_text, box, blender_bot)
 
@@ -122,6 +127,7 @@ def chatting(box, blender_bot):
             continue
     # Shows call
     box.addWidget(BubbleWidget("You and the chatbot had a voicecall.", left=True, user=False))
+
 
 def process_audio(message, box, blender_bot):
     # Add the message to the box only if there's a message
@@ -142,6 +148,7 @@ def process_audio(message, box, blender_bot):
         writer.writerow(['C', bot_text])
         history.close()
         return bot_text
+
 
 def emotion_from_image():
     # Initialise the model
@@ -487,6 +494,7 @@ class UserInterface(QMainWindow):
         if retval == 1024:
             open("data/history.csv", 'w').close()
             open("data/user_facts.csv", 'w').close()
+            open("data/persona.txt", 'w').close()
             self.blender_bot.reset()
             self.close()
             subprocess.call("python" + " User_interface.py", shell=True)
