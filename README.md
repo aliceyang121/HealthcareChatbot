@@ -1,6 +1,16 @@
 # Healthcare Chatbot
 
-Image of the user interface
+## Installing the chatbot
+
+# Create a requirement.txt
+
+After installing the modules, you need to change the torch_agent.py file in your parleai/core directory. If you don't do it, the chatbot will return an error with "from_db" inside
+# Add a link to download final_model.bin
+
+Then, you can run with the command:
+
+python user_interface.py
+![user interface](Images/ui.png)
 
 
 ## Chatbot with Parlai
@@ -96,5 +106,3 @@ The button is added in function set_menu.
 
 Function: change_persona; set_persona
 
-
-# Architecture of the project

@@ -16,7 +16,7 @@ from cv2 import VideoCapture, destroyAllWindows
 from time import time
 from numpy import max
 # Audio modules
-import os
+from os import remove
 from gtts import gTTS
 import playsound
 
@@ -89,7 +89,7 @@ def chatbot_speaks(output):
 
     # playsound package is used to play the same file.
     playsound.playsound(file, True)
-    os.remove(file)
+    remove(file)
 
 
 def get_audio():
