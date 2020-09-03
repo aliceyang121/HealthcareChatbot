@@ -2,7 +2,9 @@
 
 ## Installing the chatbot
 
-# Create a requirement.txt
+First, you can install the module with:
+
+pip install -r requirements.txt
 
 After installing the modules, you need to change the torch_agent.py file in your parleai/core directory. If you don't do it, the chatbot will return an error with "from_db" inside
 
