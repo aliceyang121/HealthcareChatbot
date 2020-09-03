@@ -170,9 +170,11 @@ def emotion_from_image():
 
 def show_emotion_and_music(text, label):
     emotion, probability = determine_overall_emotion()
-    probability = str(probability)
-    label.setText("Emotion: " + emotion + "\nProbability: " + probability)
-
+    if probability > 50:
+        probability = str(probability)
+        label.setText("Emotion: " + emotion + "\nProbability: " + probability)
+    else:
+        label.setText("Emotion: " + emotion)
     # Create the message box
     alert = QMessageBox()
     # Add text, warning icon and title
