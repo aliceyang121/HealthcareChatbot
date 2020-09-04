@@ -53,4 +53,3 @@ class EmotionRecognition(object):
                 x1, y1, x2, y2 = int(round(boxes[i][0])), int(round(boxes[i][1])), int(round(boxes[i][2])), int(
                     round(boxes[i][3]))
                 return self._predict(gray[y1:y2, x1:x2])
-
